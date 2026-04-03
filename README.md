@@ -1,6 +1,6 @@
 MIT License
 
-# AetherOS
+# AetherOS (made with ChatGPT Codex)
 
 Project root: `/home/miqua/Desktop/pcfAI`
 
