@@ -1,16 +1,16 @@
 {
   "name": "AetherOS",
-  "version_file": "/home/miqua/Desktop/pcfAI/VERSION",
-  "root": "/home/miqua/Desktop/pcfAI",
+  "version_file": "VERSION",
+  "root": "AetherOS",
   "entrypoints": {
-    "install": "/home/miqua/Desktop/pcfAI/install.sh",
-    "start": "/home/miqua/Desktop/pcfAI/bin/aether-up",
-    "stop": "/home/miqua/Desktop/pcfAI/bin/aether-down",
-    "recover": "/home/miqua/Desktop/pcfAI/bin/aether-recover",
-    "verify": "/home/miqua/Desktop/pcfAI/bin/aether-verify",
-    "report": "/home/miqua/Desktop/pcfAI/bin/aether-report"
+    "install": "install.sh",
+    "start": "bin/aether-up",
+    "stop": "bin/aether-down",
+    "recover": "bin/aether-recover",
+    "verify": "bin/aether-verify",
+    "report": "bin/aether-report"
   },
-  "desktop_session": "/home/miqua/Desktop/pcfAI/desktop/session/aetheros.desktop",
+  "desktop_session": "desktop/session/aetheros.desktop",
   "api": {
     "host": "127.0.0.1",
     "port": 8011

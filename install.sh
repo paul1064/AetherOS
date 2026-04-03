@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="/home/miqua/Desktop/pcfAI"
+PROJECT_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "[ERROR] Run as root"

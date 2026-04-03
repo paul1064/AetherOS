@@ -5,7 +5,7 @@ Wants=network-online.target ollama.service
 
 [Service]
 Type=oneshot
-ExecStart=/home/miqua/Desktop/pcfAI/bin/aether-bootstrap
+ExecStart=/home/miqua/Desktop/AetherOS/bin/aether-bootstrap
 RemainAfterExit=yes
 StandardOutput=journal
 StandardError=journal

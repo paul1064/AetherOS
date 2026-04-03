@@ -6,7 +6,7 @@ Requires=aether-bootstrap.service
 
 [Service]
 Type=simple
-ExecStart=/home/miqua/Desktop/pcfAI/bin/aether-supervisor
+ExecStart=/home/miqua/Desktop/AetherOS/bin/aether-supervisor
 Restart=always
 RestartSec=5
 StandardOutput=journal

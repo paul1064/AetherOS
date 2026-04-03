@@ -5,9 +5,9 @@ Wants=network-online.target ollama.service
 
 [Service]
 Type=oneshot
-ExecStart=/home/miqua/Desktop/pcfAI/bin/aether-models --seed-defaults
-WorkingDirectory=/home/miqua/Desktop/pcfAI
-Environment=PYTHONPATH=/home/miqua/Desktop/pcfAI/lib
+ExecStart=/home/miqua/Desktop/AetherOS/bin/aether-models --seed-defaults
+WorkingDirectory=/home/miqua/Desktop/AetherOS
+Environment=PYTHONPATH=/home/miqua/Desktop/AetherOS/lib
 StandardOutput=journal
 StandardError=journal
 

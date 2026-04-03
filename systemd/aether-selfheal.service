@@ -5,11 +5,11 @@ Requires=aether-bootstrap.service
 
 [Service]
 Type=simple
-ExecStart=/home/miqua/Desktop/pcfAI/bin/aether-selfheal
+ExecStart=/home/miqua/Desktop/AetherOS/bin/aether-selfheal
 Restart=always
 RestartSec=5
-WorkingDirectory=/home/miqua/Desktop/pcfAI
-Environment=PYTHONPATH=/home/miqua/Desktop/pcfAI/lib
+WorkingDirectory=/home/miqua/Desktop/AetherOS
+Environment=PYTHONPATH=/home/miqua/Desktop/AetherOS/lib
 StandardOutput=journal
 StandardError=journal
 
