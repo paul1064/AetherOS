@@ -1,0 +1,39 @@
+#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+# MIT License
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
+
+from aether_core import list_entities, load_memory_graph, recent_long_term_memories, search_long_term_memory
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="AetherOS memory query CLI")
+    parser.add_argument("--search", default="")
+    parser.add_argument("--graph", action="store_true")
+    parser.add_argument("--entities", action="store_true")
+    args = parser.parse_args()
+
+    if args.graph:
+        print(json.dumps(load_memory_graph(), indent=2))
+        return 0
+
+    if args.entities:
+        rows = [dict(row) for row in list_entities()]
+        print(json.dumps(rows, indent=2))
+        return 0
+
+    rows = recent_long_term_memories() if not args.search else search_long_term_memory(args.search)
+    print(json.dumps([dict(row) for row in rows], indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

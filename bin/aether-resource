@@ -1,0 +1,95 @@
+#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+# MIT License
+
+from __future__ import annotations
+
+import os
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
+
+from aether_core import (
+    emit_event,
+    init_event_bus,
+    load_config,
+    record_resource_sample,
+    record_system_event,
+    sleep_loop,
+    write_agent_state,
+)
+
+LOG_PATH = PROJECT_ROOT / "runtime" / "logs" / "resource.log"
+
+
+def log(message: str) -> None:
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with LOG_PATH.open("a", encoding="utf-8") as handle:
+        handle.write(f"{message}\n")
+
+
+def read_cpu_pct() -> float:
+    with open("/proc/loadavg", "r", encoding="utf-8") as handle:
+        load_1 = float(handle.read().split()[0])
+    cpu_count = max(os.cpu_count() or 1, 1)
+    return min((load_1 / cpu_count) * 100.0, 999.0)
+
+
+def read_memory_stats() -> tuple[float, float]:
+    values: dict[str, float] = {}
+    with open("/proc/meminfo", "r", encoding="utf-8") as handle:
+        for line in handle:
+            key, raw = line.split(":", 1)
+            values[key] = float(raw.strip().split()[0])
+
+    total_kb = values.get("MemTotal", 1.0)
+    available_kb = values.get("MemAvailable", 0.0)
+    used_pct = ((total_kb - available_kb) / total_kb) * 100.0
+    return used_pct, available_kb / 1024.0
+
+
+def read_load_averages() -> tuple[float, float, float]:
+    load_1, load_5, load_15 = os.getloadavg()
+    return float(load_1), float(load_5), float(load_15)
+
+
+def sample_resources() -> None:
+    cfg = load_config()
+    cpu_pct = read_cpu_pct()
+    memory_pct, available_mb = read_memory_stats()
+    load_1, load_5, load_15 = read_load_averages()
+
+    record_resource_sample(cpu_pct, memory_pct, load_1, load_5, load_15, available_mb)
+    write_agent_state("resource-intelligence", "running", "running")
+
+    if cpu_pct >= float(cfg.resource_intelligence.get("cpu_high_watermark_pct", 85)):
+        message = f"high cpu pressure detected: {cpu_pct:.2f}%"
+        record_system_event("resource", "warning", message)
+        emit_event("resource.pressure.cpu", "resource", {"cpu_pct": cpu_pct})
+        log(message)
+
+    if memory_pct >= float(cfg.resource_intelligence.get("memory_high_watermark_pct", 90)):
+        message = f"high memory pressure detected: {memory_pct:.2f}%"
+        record_system_event("resource", "warning", message)
+        emit_event("resource.pressure.memory", "resource", {"memory_pct": memory_pct})
+        log(message)
+
+
+def main() -> None:
+    init_event_bus()
+    log("resource_agent_started")
+    while True:
+        try:
+            sample_resources()
+        except Exception as exc:
+            message = f"resource_cycle_failed: {exc}"
+            log(message)
+            record_system_event("resource", "error", message)
+            write_agent_state("resource-intelligence", "running", "degraded")
+        interval = int(load_config().resource_intelligence.get("sampling_interval_sec", 15))
+        sleep_loop(interval)
+
+
+if __name__ == "__main__":
+    main()

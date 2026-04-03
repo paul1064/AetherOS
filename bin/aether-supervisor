@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# MIT License
+
+set -euo pipefail
+
+AETHER_ROOT="/home/miqua/Desktop/pcfAI"
+STATE_DIR="${AETHER_ROOT}/runtime/state"
+LOG_DIR="${AETHER_ROOT}/runtime/logs"
+SQLITE_DB="${AETHER_ROOT}/data/sqlite/aether.db"
+LOG_FILE="${LOG_DIR}/supervisor.log"
+AETHER_USER="miqua"
+
+mkdir -p "${STATE_DIR}" "${LOG_DIR}"
+touch "${LOG_FILE}"
+
+log() {
+  printf '%s %s\n' "[aether-supervisor]" "$*" | tee -a "${LOG_FILE}"
+}
+
+record_state() {
+  local agent="$1"
+  local desired="$2"
+  local actual="$3"
+
+  sqlite3 "${SQLITE_DB}" <<SQL
+INSERT INTO agent_state(agent_name, desired_state, actual_state, updated_at)
+VALUES('${agent}', '${desired}', '${actual}', CURRENT_TIMESTAMP)
+ON CONFLICT(agent_name) DO UPDATE SET
+  desired_state=excluded.desired_state,
+  actual_state=excluded.actual_state,
+  updated_at=CURRENT_TIMESTAMP;
+SQL
+}
+
+ensure_runtime() {
+  mkdir -p "${AETHER_ROOT}/runtime/sockets" "${AETHER_ROOT}/runtime/locks" "${AETHER_ROOT}/runtime/logs"
+}
+
+healthcheck_ollama() {
+  curl -fsS http://127.0.0.1:11434/api/tags >/dev/null 2>&1
+}
+
+start_memory_container() {
+  if sudo -u "${AETHER_USER}" podman ps --format '{{.Names}}' | grep -qx 'aether-memory'; then
+    record_state "memory" "running" "running"
+    return 0
+  fi
+
+  if sudo -u "${AETHER_USER}" "${AETHER_ROOT}/bin/aether-memory-container"; then
+    log "memory container started"
+    record_state "memory" "running" "running"
+    return 0
+  fi
+
+  log "memory container failed to start"
+  record_state "memory" "running" "degraded"
+  return 1
+}
+
+main_loop() {
+  while true; do
+    if healthcheck_ollama; then
+      record_state "orchestrator" "running" "running"
+      record_state "nlshell" "running" "running"
+      record_state "selfheal" "running" "running"
+      record_state "resource-intelligence" "running" "running"
+      record_state "meta-agent" "running" "running"
+      record_state "memory-curator" "running" "running"
+      start_memory_container || true
+    else
+      log "ollama unavailable"
+      record_state "orchestrator" "running" "degraded"
+      record_state "memory" "running" "degraded"
+      record_state "nlshell" "running" "degraded"
+      record_state "selfheal" "running" "degraded"
+      record_state "resource-intelligence" "running" "degraded"
+      record_state "meta-agent" "running" "degraded"
+      record_state "memory-curator" "running" "degraded"
+    fi
+
+    sleep 15
+  done
+}
+
+main() {
+  ensure_runtime
+  log "Supervisor starting"
+  main_loop
+}
+
+main "$@"

@@ -1,0 +1,100 @@
+#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+# MIT License
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
+
+from aether_core import (
+    emit_event,
+    init_event_bus,
+    load_config,
+    recent_remediation_count,
+    record_remediation_action,
+    record_system_event,
+    sleep_loop,
+    systemctl_is_active,
+    systemctl_restart,
+    write_agent_state,
+)
+
+LOG_PATH = PROJECT_ROOT / "runtime" / "logs" / "selfheal.log"
+
+
+def log(message: str) -> None:
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with LOG_PATH.open("a", encoding="utf-8") as handle:
+        handle.write(f"{message}\n")
+
+
+def monitored_units() -> list[str]:
+    cfg = load_config()
+    return list(cfg.self_healing.get("monitored_units", []))
+
+
+def restart_limit_per_hour() -> int:
+    cfg = load_config()
+    return int(cfg.self_healing.get("restart_limit_per_hour", 3))
+
+
+def auto_remediation_enabled() -> bool:
+    cfg = load_config()
+    return bool(cfg.self_healing.get("auto_remediation", False))
+
+
+def heal_unit(unit_name: str) -> None:
+    if systemctl_is_active(unit_name):
+        write_agent_state(unit_name, "running", "running")
+        return
+
+    write_agent_state(unit_name, "running", "degraded")
+    message = f"detected inactive unit: {unit_name}"
+    record_system_event("selfheal", "warning", message)
+    emit_event("selfheal.unit.degraded", "selfheal", {"unit": unit_name, "message": message})
+
+    if not auto_remediation_enabled():
+        log(f"auto remediation disabled for {unit_name}")
+        return
+
+    restart_count = recent_remediation_count(unit_name, "restart")
+    if restart_count >= restart_limit_per_hour():
+        details = f"restart limit reached for {unit_name}"
+        record_remediation_action("selfheal", unit_name, "restart", "skipped", details)
+        record_system_event("selfheal", "warning", details)
+        return
+
+    rc, output = systemctl_restart(unit_name)
+    status = "success" if rc == 0 else "failed"
+    details = output or "no output"
+    record_remediation_action("selfheal", unit_name, "restart", status, details)
+    record_system_event("selfheal", "info" if rc == 0 else "error", f"restart {status} for {unit_name}")
+    emit_event(
+        "selfheal.unit.restart_attempted",
+        "selfheal",
+        {"unit": unit_name, "status": status, "details": details},
+    )
+    write_agent_state(unit_name, "running", "running" if rc == 0 else "degraded")
+    log(f"restart {status} for {unit_name}")
+
+
+def main() -> None:
+    init_event_bus()
+    log("selfheal_started")
+    while True:
+        for unit_name in monitored_units():
+            try:
+                heal_unit(unit_name)
+            except Exception as exc:
+                message = f"selfheal_cycle_failed unit={unit_name}: {exc}"
+                log(message)
+                record_system_event("selfheal", "error", message)
+        interval = int(load_config().self_healing.get("journal_scan_interval_sec", 30))
+        sleep_loop(interval)
+
+
+if __name__ == "__main__":
+    main()

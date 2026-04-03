@@ -1,0 +1,217 @@
+#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+# MIT License
+
+from __future__ import annotations
+
+import curses
+import textwrap
+import time
+from pathlib import Path
+import sys
+
+PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
+
+from aether_api_client import api_get, api_post
+from aether_core import load_config
+
+
+HELP = [
+    "q quit",
+    "r refresh",
+    "p prompt",
+    "a approve latest proposal",
+    "x reject latest proposal",
+    "m create meta job",
+]
+
+
+def prompt_user(stdscr: curses.window, label: str) -> str:
+    curses.echo()
+    height, width = stdscr.getmaxyx()
+    stdscr.addstr(height - 2, 0, " " * (width - 1))
+    stdscr.addstr(height - 2, 0, label[: width - 1])
+    stdscr.refresh()
+    value = stdscr.getstr(height - 1, 0, width - 1).decode("utf-8").strip()
+    stdscr.addstr(height - 1, 0, " " * (width - 1))
+    curses.noecho()
+    return value
+
+
+def safe_status() -> dict:
+    try:
+        return api_get("/status")  # type: ignore[return-value]
+    except Exception as exc:
+        return {"error": str(exc)}
+
+
+def lines_from_status(status: dict) -> list[str]:
+    if "error" in status:
+        return [f"API error: {status['error']}"]
+
+    lines: list[str] = []
+    lines.append("AetherOS Operator Console")
+    lines.append("")
+    lines.append("Agents")
+    for agent in status.get("agents", []):
+        lines.append(
+            f"  {agent['agent_name']}: desired={agent['desired_state']} actual={agent['actual_state']} updated={agent['updated_at']}"
+        )
+
+    plan = status.get("latest_plan") or {}
+    lines.append("")
+    lines.append("Latest Plan")
+    if plan:
+        lines.append(f"  summary: {plan.get('summary', '')}")
+        lines.append(f"  intent: {plan.get('intent', '')}")
+        lines.append(f"  command: {plan.get('suggested_command', '') or '[none]'}")
+        if plan.get("proposal_id") is not None:
+            lines.append(f"  proposal_id: {plan['proposal_id']}")
+    else:
+        lines.append("  none")
+
+    proposal = status.get("latest_proposal") or {}
+    lines.append("")
+    lines.append("Latest Proposal")
+    if proposal:
+        lines.append(f"  id: {proposal.get('id')}")
+        lines.append(f"  command: {proposal.get('proposed_command')}")
+        lines.append(f"  approved: {proposal.get('approved')} executed: {proposal.get('executed')}")
+    else:
+        lines.append("  none")
+
+    resource = status.get("latest_resource_sample") or {}
+    lines.append("")
+    lines.append("Resources")
+    if resource:
+        lines.append(
+            f"  cpu={resource.get('cpu_pct', 0):.2f}% mem={resource.get('memory_pct', 0):.2f}% load={resource.get('load_avg_1', 0):.2f}/{resource.get('load_avg_5', 0):.2f}/{resource.get('load_avg_15', 0):.2f}"
+        )
+    else:
+        lines.append("  none")
+
+    lines.append("")
+    lines.append("Recent Remediations")
+    remediations = status.get("recent_remediations", [])
+    if remediations:
+        for row in remediations[:5]:
+            lines.append(f"  {row['ts']} {row['target']} {row['action']} {row['status']}")
+    else:
+        lines.append("  none")
+
+    lines.append("")
+    lines.append("Recent System Events")
+    events = status.get("recent_system_events", [])
+    if events:
+        for row in events[:5]:
+            lines.append(f"  {row['ts']} {row['source']} {row['level']} {row['message']}")
+    else:
+        lines.append("  none")
+
+    lines.append("")
+    lines.append("Help")
+    lines.extend([f"  {item}" for item in HELP])
+    return lines
+
+
+def draw(stdscr: curses.window, status: dict, footer: str) -> None:
+    stdscr.erase()
+    height, width = stdscr.getmaxyx()
+    for idx, line in enumerate(lines_from_status(status)[: height - 2]):
+        for wrapped_index, wrapped in enumerate(textwrap.wrap(line, width - 1) or [""]):
+            row = idx + wrapped_index
+            if row >= height - 2:
+                break
+            stdscr.addstr(row, 0, wrapped[: width - 1])
+    stdscr.addstr(height - 1, 0, footer[: width - 1])
+    stdscr.refresh()
+
+
+def latest_proposal_id(status: dict) -> int | None:
+    proposal = status.get("latest_proposal")
+    if not proposal:
+      return None
+    if proposal.get("id") is None:
+        return None
+    return int(proposal["id"])
+
+
+def main(stdscr: curses.window) -> int:
+    curses.curs_set(0)
+    stdscr.nodelay(True)
+    refresh_sec = int(load_config().raw["runtime"].get("operator_refresh_sec", 3))
+    last_refresh = 0.0
+    footer = "operator console ready"
+    status = safe_status()
+
+    while True:
+        now = time.time()
+        if now - last_refresh >= refresh_sec:
+            status = safe_status()
+            last_refresh = now
+
+        draw(stdscr, status, footer)
+        key = stdscr.getch()
+        if key == -1:
+            time.sleep(0.1)
+            continue
+
+        if key == ord("q"):
+            return 0
+        if key == ord("r"):
+            status = safe_status()
+            footer = "manual refresh complete"
+            last_refresh = time.time()
+        elif key == ord("p"):
+            text = prompt_user(stdscr, "Prompt: ")
+            if text:
+                try:
+                    api_post("/shell/submit", {"text": text})
+                    footer = "prompt queued"
+                except Exception as exc:
+                    footer = f"prompt failed: {exc}"
+                status = safe_status()
+        elif key == ord("a"):
+            proposal_id = latest_proposal_id(status)
+            if proposal_id is None:
+                footer = "no latest proposal"
+            else:
+                try:
+                    api_post(f"/proposals/{proposal_id}/approve", {"note": "approved from operator console"})
+                    footer = f"approved proposal {proposal_id}"
+                except Exception as exc:
+                    footer = f"approve failed: {exc}"
+                status = safe_status()
+        elif key == ord("x"):
+            proposal_id = latest_proposal_id(status)
+            if proposal_id is None:
+                footer = "no latest proposal"
+            else:
+                try:
+                    api_post(f"/proposals/{proposal_id}/reject", {"note": "rejected from operator console"})
+                    footer = f"rejected proposal {proposal_id}"
+                except Exception as exc:
+                    footer = f"reject failed: {exc}"
+                status = safe_status()
+        elif key == ord("m"):
+            prompt = prompt_user(stdscr, "Meta job prompt: ")
+            if prompt:
+                try:
+                    api_post(
+                        "/meta/jobs",
+                        {
+                            "name": "operator-meta-job",
+                            "role": "operator",
+                            "prompt": prompt,
+                            "image_name": "",
+                            "notes": "queued from operator console",
+                        },
+                    )
+                    footer = "meta job queued"
+                except Exception as exc:
+                    footer = f"meta job failed: {exc}"
+                status = safe_status()
+
+
+if __name__ == "__main__":
+    raise SystemExit(curses.wrapper(main))

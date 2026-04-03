@@ -1,0 +1,43 @@
+#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+# MIT License
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
+
+from aether_core import list_governance_profiles, recent_audit, update_governance_profile
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="AetherOS governance CLI")
+    parser.add_argument("--profiles", action="store_true")
+    parser.add_argument("--audit", action="store_true")
+    parser.add_argument("--set-profile", nargs=2, metavar=("SOURCE", "PROFILE"))
+    args = parser.parse_args()
+
+    if args.profiles:
+        print(json.dumps([dict(row) for row in list_governance_profiles()], indent=2))
+        return 0
+
+    if args.audit:
+        print(json.dumps([dict(row) for row in recent_audit()], indent=2))
+        return 0
+
+    if args.set_profile:
+        source_name, capability_profile = args.set_profile
+        update_governance_profile(source_name, capability_profile)
+        print(json.dumps({"status": "updated", "source_name": source_name, "capability_profile": capability_profile}, indent=2))
+        return 0
+
+    parser.print_help()
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

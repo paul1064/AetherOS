@@ -1,0 +1,70 @@
+#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+# MIT License
+
+from __future__ import annotations
+
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
+
+from aether_core import emit_event, load_config, record_system_event
+
+
+def main() -> int:
+    if len(sys.argv) != 2:
+        print("usage: aether-stt <audio-file>")
+        return 1
+
+    audio_path = Path(sys.argv[1]).expanduser().resolve()
+    if not audio_path.exists():
+        print(f"audio file not found: {audio_path}")
+        return 1
+
+    whisper_cli = shutil.which("whisper")
+    if whisper_cli is None:
+        message = "whisper CLI not installed"
+        record_system_event("stt", "warning", message)
+        print(message)
+        return 1
+
+    voice_dir = Path(load_config().raw["multimodal"]["voice_dir"])
+    voice_dir.mkdir(parents=True, exist_ok=True)
+    model_name = str(load_config().raw["multimodal"]["whisper_model"])
+    proc = subprocess.run(
+        [
+            whisper_cli,
+            str(audio_path),
+            "--model",
+            model_name,
+            "--output_dir",
+            str(voice_dir),
+            "--output_format",
+            "txt",
+        ],
+        text=True,
+        capture_output=True,
+        timeout=1800,
+    )
+
+    combined = (proc.stdout + "\n" + proc.stderr).strip()
+    if proc.returncode != 0:
+        record_system_event("stt", "error", combined or "stt failed")
+        print(combined or "stt failed")
+        return 1
+
+    transcript_path = voice_dir / f"{audio_path.stem}.txt"
+    emit_event(
+        "multimodal.speech.transcribed",
+        "aether-stt",
+        {"audio_path": str(audio_path), "transcript_path": str(transcript_path)},
+    )
+    print(str(transcript_path))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

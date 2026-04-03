@@ -1,0 +1,29 @@
+#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+# MIT License
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+import uvicorn
+
+PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
+
+from aether_core import load_config
+
+
+def main() -> None:
+    cfg = load_config()
+    uvicorn.run(
+        "aether_api_app:app",
+        host=str(cfg.raw["runtime"]["api_host"]),
+        port=int(cfg.raw["runtime"]["api_port"]),
+        reload=False,
+        log_level="info",
+    )
+
+
+if __name__ == "__main__":
+    main()

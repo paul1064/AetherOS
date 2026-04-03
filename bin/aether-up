@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# MIT License
+
+set -euo pipefail
+
+SERVICES=(
+  aether-bootstrap.service
+  aether-supervisor.service
+  aether-orchestrator.service
+  aether-executor.service
+  aether-vector-memory.service
+  aether-memory-curator.service
+  aether-selfheal.service
+  aether-resource.service
+  aether-api.service
+  aether-meta.service
+  aether-models.service
+)
+
+systemctl daemon-reload
+systemctl enable "${SERVICES[@]}"
+systemctl restart "${SERVICES[@]}"
+systemctl restart aether-snapshot.timer
+
+echo "AetherOS started"

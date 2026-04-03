@@ -1,0 +1,164 @@
+#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+# MIT License
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+import json
+
+PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
+
+from aether_api_client import api_get
+from aether_core import (
+    fetch_agent_states,
+    fetch_meta_jobs,
+    list_entities,
+    list_governance_profiles,
+    list_models,
+    latest_plan,
+    latest_proposal,
+    latest_resource_sample,
+    recent_audit,
+    recent_long_term_memories,
+    recent_remediations,
+)
+
+
+def print_agent_states() -> None:
+    print("Agent States")
+    for row in fetch_agent_states():
+        print(f"- {row['agent_name']}: desired={row['desired_state']} actual={row['actual_state']} updated={row['updated_at']}")
+
+
+def print_plan() -> None:
+    plan = latest_plan()
+    print("Latest Plan")
+    if not plan:
+        print("- none")
+        return
+    print(f"- summary: {plan.get('summary', '')}")
+    print(f"- intent: {plan.get('intent', '')}")
+    print(f"- command: {plan.get('suggested_command', '') or '[none]'}")
+    if plan.get("proposal_id") is not None:
+        print(f"- proposal_id: {plan['proposal_id']}")
+
+
+def print_proposal() -> None:
+    proposal = latest_proposal()
+    print("Latest Proposal")
+    if not proposal:
+        print("- none")
+        return
+    print(f"- id: {proposal['id']}")
+    print(f"- command: {proposal['proposed_command']}")
+    print(f"- approved: {proposal['approved']}")
+    print(f"- executed: {proposal['executed']}")
+
+
+def print_resource_sample() -> None:
+    sample = latest_resource_sample()
+    print("Latest Resource Sample")
+    if not sample:
+        print("- none")
+        return
+    print(f"- cpu_pct: {sample['cpu_pct']:.2f}")
+    print(f"- memory_pct: {sample['memory_pct']:.2f}")
+    print(f"- loadavg: {sample['load_avg_1']:.2f} {sample['load_avg_5']:.2f} {sample['load_avg_15']:.2f}")
+    print(f"- available_memory_mb: {sample['available_memory_mb']:.2f}")
+
+
+def print_remediations() -> None:
+    print("Recent Remediations")
+    rows = recent_remediations()
+    if not rows:
+        print("- none")
+        return
+    for row in rows:
+        print(f"- {row['ts']} {row['target']} {row['action']} {row['status']}")
+
+
+def print_meta_jobs() -> None:
+    print("Meta Jobs")
+    rows = fetch_meta_jobs(limit=5)
+    if not rows:
+        print("- none")
+        return
+    for row in rows:
+        print(f"- id={row['id']} name={row['name']} role={row['role']} status={row['status']}")
+
+
+def print_memory() -> None:
+    print("Long-Term Memory")
+    memories = recent_long_term_memories(limit=5)
+    if not memories:
+        print("- none")
+    else:
+        for row in memories:
+            print(f"- {row['category']} conf={row['confidence']:.2f} summary={row['summary']}")
+
+    print("Entities")
+    entities = list_entities(limit=5)
+    if not entities:
+        print("- none")
+    else:
+        for row in entities:
+            print(f"- {row['entity_name']} type={row['entity_type']} mentions={row['mention_count']}")
+
+
+def print_governance() -> None:
+    print("Governance Profiles")
+    profiles = list_governance_profiles()
+    if not profiles:
+        print("- none")
+    else:
+        for row in profiles:
+            print(f"- {row['source_name']} profile={row['capability_profile']}")
+
+    print("Recent Audit")
+    audit_rows = recent_audit(limit=5)
+    if not audit_rows:
+        print("- none")
+    else:
+        for row in audit_rows:
+            print(f"- {row['ts']} actor={row['actor']} action={row['action']} status={row['status']}")
+
+
+def print_models() -> None:
+    print("Models")
+    rows = list_models()
+    if not rows:
+        print("- none")
+        return
+    for row in rows[:5]:
+        print(f"- {row['model_name']} role={row['role']} installed={row['installed']} enabled={row['enabled']}")
+
+
+def main() -> int:
+    if len(sys.argv) > 1 and sys.argv[1] == "--api":
+        print(json.dumps(api_get("/status"), indent=2))
+        return 0
+
+    print_agent_states()
+    print()
+    print_plan()
+    print()
+    print_proposal()
+    print()
+    print_resource_sample()
+    print()
+    print_remediations()
+    print()
+    print_meta_jobs()
+    print()
+    print_memory()
+    print()
+    print_governance()
+    print()
+    print_models()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

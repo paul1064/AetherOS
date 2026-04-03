@@ -1,0 +1,160 @@
+#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+# MIT License
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
+
+from aether_core import (
+    approve_proposal,
+    command_allowed,
+    confirmation_required,
+    emit_event,
+    fetch_proposal,
+    get_db,
+    latest_plan,
+    latest_proposal,
+    reject_proposal,
+)
+
+LOG_PATH = PROJECT_ROOT / "runtime" / "logs" / "aether-shell.log"
+
+
+def log(message: str) -> None:
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with LOG_PATH.open("a", encoding="utf-8") as handle:
+        handle.write(f"{message}\n")
+
+
+def interactive(text: str) -> int:
+    emit_event("user.prompt.received", "aether-shell", {"text": text})
+    log(f"user_input={text}")
+    print("AetherOS: request queued for orchestration.")
+    print("AetherOS: wait 3-5 seconds, then run:")
+    print("  aether-shell --show-last-plan")
+    return 0
+
+
+def show_last_plan() -> int:
+    plan = latest_plan()
+    if not plan:
+        print("No plan available yet.")
+        return 1
+
+    command = plan.get("suggested_command", "").strip()
+    reason = plan.get("reason", "No reason provided")
+    needs_confirm = bool(plan.get("needs_confirmation", True)) or confirmation_required(command)
+
+    print("Latest plan")
+    print(f"Summary: {plan.get('summary', '')}")
+    print(f"Intent: {plan.get('intent', '')}")
+    print(f"Command: {command or '[none]'}")
+    print(f"Reason: {reason}")
+    print(f"Confirmation: {'required' if needs_confirm else 'not required'}")
+    if plan.get("proposal_id") is not None:
+        print(f"Proposal ID: {plan['proposal_id']}")
+
+    if command:
+        allowed, policy_reason = command_allowed(command)
+        print(f"Policy: {'allowed' if allowed else 'blocked'}")
+        print(f"Policy reason: {policy_reason}")
+
+    return 0
+
+
+def print_proposal(row: object) -> int:
+    if row is None:
+        print("Proposal not found.")
+        return 1
+
+    proposal = dict(row)
+    print(f"Proposal ID: {proposal['id']}")
+    print(f"Command: {proposal['proposed_command']}")
+    print(f"Reason: {proposal['reason']}")
+    print(f"Approved: {proposal['approved']}")
+    print(f"Executed: {proposal['executed']}")
+    print(f"Approval note: {proposal['approval_note']}")
+    if proposal["execution_output"]:
+        print("Execution output:")
+        print(proposal["execution_output"])
+    return 0
+
+
+def approve_command(proposal_id: int | None, note: str) -> int:
+    if proposal_id is None:
+        latest = latest_proposal()
+        if latest is None:
+            print("No proposal available.")
+            return 1
+        proposal_id = int(latest["id"])
+
+    if not approve_proposal(proposal_id, note):
+        print("Proposal not found.")
+        return 1
+
+    print(f"Approved proposal {proposal_id}.")
+    return 0
+
+
+def reject_command(proposal_id: int | None, note: str) -> int:
+    if proposal_id is None:
+        latest = latest_proposal()
+        if latest is None:
+            print("No proposal available.")
+            return 1
+        proposal_id = int(latest["id"])
+
+    if not reject_proposal(proposal_id, note):
+        print("Proposal not found.")
+        return 1
+
+    print(f"Rejected proposal {proposal_id}.")
+    return 0
+
+
+def show_proposal(proposal_id: int | None) -> int:
+    if proposal_id is None:
+        return print_proposal(latest_proposal())
+    return print_proposal(fetch_proposal(proposal_id))
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="AetherOS natural language shell")
+    parser.add_argument("text", nargs="*", help="Natural language request")
+    parser.add_argument("--show-last-plan", action="store_true")
+    parser.add_argument("--show-proposal", type=int, nargs="?", const=-1)
+    parser.add_argument("--approve", type=int, nargs="?", const=-1)
+    parser.add_argument("--reject", type=int, nargs="?", const=-1)
+    parser.add_argument("--note", default="", help="Approval or rejection note")
+    args = parser.parse_args()
+
+    if args.show_last_plan:
+        return show_last_plan()
+
+    if args.show_proposal is not None:
+        proposal_id = None if args.show_proposal == -1 else args.show_proposal
+        return show_proposal(proposal_id)
+
+    if args.approve is not None:
+        proposal_id = None if args.approve == -1 else args.approve
+        return approve_command(proposal_id, args.note)
+
+    if args.reject is not None:
+        proposal_id = None if args.reject == -1 else args.reject
+        return reject_command(proposal_id, args.note)
+
+    if not args.text:
+        parser.print_help()
+        return 1
+
+    return interactive(" ".join(args.text))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

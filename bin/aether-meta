@@ -1,0 +1,68 @@
+#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+# MIT License
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
+
+from aether_core import create_meta_job, fetch_meta_job, fetch_meta_jobs
+
+
+def submit_job(name: str, role: str, prompt: str, image: str, notes: str) -> int:
+    job_id = create_meta_job(name=name, role=role, prompt=prompt, image_name=image, notes=notes)
+    print(f"Queued meta job {job_id}")
+    return 0
+
+
+def show_job(job_id: int) -> int:
+    row = fetch_meta_job(job_id)
+    if row is None:
+        print("Meta job not found.")
+        return 1
+    print(json.dumps(dict(row), indent=2))
+    return 0
+
+
+def list_jobs(status: str | None) -> int:
+    rows = [dict(row) for row in fetch_meta_jobs(status=status, limit=50)]
+    print(json.dumps(rows, indent=2))
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="AetherOS meta-agent CLI")
+    parser.add_argument("--submit", action="store_true")
+    parser.add_argument("--name", default="subagent-job")
+    parser.add_argument("--role", default="general")
+    parser.add_argument("--prompt", default="")
+    parser.add_argument("--image", default="")
+    parser.add_argument("--notes", default="")
+    parser.add_argument("--list", action="store_true")
+    parser.add_argument("--status", default=None)
+    parser.add_argument("--show", type=int)
+    args = parser.parse_args()
+
+    if args.submit:
+        if not args.prompt:
+            print("--prompt is required")
+            return 1
+        return submit_job(args.name, args.role, args.prompt, args.image, args.notes)
+
+    if args.show is not None:
+        return show_job(args.show)
+
+    if args.list:
+        return list_jobs(args.status)
+
+    parser.print_help()
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

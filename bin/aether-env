@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# MIT License
+
+set -euo pipefail
+
+PROJECT_ROOT="/home/miqua/Desktop/pcfAI"
+EXAMPLE_ENV="${PROJECT_ROOT}/.env.example"
+TARGET_ENV="${PROJECT_ROOT}/.env"
+
+if [[ ! -f "${TARGET_ENV}" ]]; then
+  cp "${EXAMPLE_ENV}" "${TARGET_ENV}"
+  echo "Created ${TARGET_ENV}"
+else
+  echo "${TARGET_ENV} already exists"
+fi

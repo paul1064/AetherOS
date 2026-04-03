@@ -1,0 +1,51 @@
+#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+# MIT License
+
+from __future__ import annotations
+
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
+
+from aether_core import emit_event, load_config, record_system_event, timestamp_id
+
+
+def choose_capture_command(output_path: Path) -> list[str]:
+    cfg = load_config().raw["multimodal"]
+    preferences = cfg.get("screenshot_command_preference", [])
+    for binary in preferences:
+        if shutil.which(binary) is None:
+            continue
+        if binary == "grim":
+            return ["grim", str(output_path)]
+        if binary == "gnome-screenshot":
+            return ["gnome-screenshot", "-f", str(output_path)]
+        if binary == "scrot":
+            return ["scrot", str(output_path)]
+    raise RuntimeError("No supported screenshot tool found")
+
+
+def main() -> int:
+    cfg = load_config().raw["multimodal"]
+    capture_dir = Path(cfg["screenshot_dir"])
+    capture_dir.mkdir(parents=True, exist_ok=True)
+    output_path = capture_dir / f"{timestamp_id('capture')}.png"
+    command = choose_capture_command(output_path)
+    proc = subprocess.run(command, text=True, capture_output=True, timeout=120)
+    if proc.returncode != 0:
+        message = (proc.stdout + "\n" + proc.stderr).strip() or "capture failed"
+        record_system_event("screenshot", "error", message)
+        print(message)
+        return 1
+
+    emit_event("multimodal.screenshot.captured", "aether-screenshot", {"path": str(output_path)})
+    print(str(output_path))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

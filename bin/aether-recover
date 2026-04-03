@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# MIT License
+
+set -euo pipefail
+
+PROJECT_ROOT="/home/miqua/Desktop/pcfAI"
+
+echo "[INFO] Running verification"
+"${PROJECT_ROOT}/bin/aether-verify" || true
+
+echo "[INFO] Restarting core AetherOS services"
+"${PROJECT_ROOT}/bin/aether-up"
+
+echo "[INFO] Exporting diagnostic report"
+"${PROJECT_ROOT}/bin/aether-report"

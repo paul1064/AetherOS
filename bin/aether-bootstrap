@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# MIT License
+
+set -euo pipefail
+
+AETHER_ROOT="/home/miqua/Desktop/pcfAI"
+RUNTIME_DIR="${AETHER_ROOT}/runtime"
+LOG_FILE="${RUNTIME_DIR}/logs/bootstrap-runtime.log"
+
+mkdir -p "${RUNTIME_DIR}/logs" "${RUNTIME_DIR}/state" "${RUNTIME_DIR}/locks" "${RUNTIME_DIR}/sockets"
+touch "${LOG_FILE}"
+
+log() {
+  printf '%s %s\n' "[aether-bootstrap]" "$*" | tee -a "${LOG_FILE}"
+}
+
+ensure_paths() {
+  local paths=(
+    "${AETHER_ROOT}/data/sqlite"
+    "${AETHER_ROOT}/data/chroma"
+    "${AETHER_ROOT}/data/graph"
+    "${AETHER_ROOT}/runtime/sockets"
+    "${AETHER_ROOT}/runtime/state"
+    "${AETHER_ROOT}/runtime/logs"
+  )
+
+  for p in "${paths[@]}"; do
+    mkdir -p "${p}"
+  done
+}
+
+check_binary() {
+  local bin="$1"
+  if ! command -v "${bin}" >/dev/null 2>&1; then
+    log "ERROR: required binary missing: ${bin}"
+    exit 1
+  fi
+}
+
+check_services() {
+  if ! systemctl is-active --quiet ollama; then
+    log "Starting ollama service"
+    systemctl start ollama
+  fi
+}
+
+check_model() {
+  if ! ollama list | awk '{print $1}' | grep -qx 'qwen3-coder'; then
+    log "Primary model qwen3-coder not found locally"
+    log "Attempting model pull"
+    ollama pull qwen3-coder || log "WARN: model pull failed; continue for now"
+  else
+    log "Primary model qwen3-coder available"
+  fi
+}
+
+init_sqlite() {
+  local db="${AETHER_ROOT}/data/sqlite/aether.db"
+  sqlite3 "${db}" <<'SQL'
+CREATE TABLE IF NOT EXISTS system_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts DATETIME DEFAULT CURRENT_TIMESTAMP,
+  source TEXT NOT NULL,
+  level TEXT NOT NULL,
+  message TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS agent_state (
+  agent_name TEXT PRIMARY KEY,
+  desired_state TEXT NOT NULL,
+  actual_state TEXT NOT NULL,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+SQL
+  log "SQLite bootstrap complete"
+}
+
+main() {
+  log "Bootstrap runtime starting"
+  check_binary systemctl
+  check_binary sqlite3
+  check_binary podman
+  check_binary ollama
+  ensure_paths
+  check_services
+  check_model
+  init_sqlite
+  log "Bootstrap runtime finished successfully"
+}
+
+main "$@"

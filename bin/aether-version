@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# MIT License
+
+set -euo pipefail
+
+PROJECT_ROOT="/home/miqua/Desktop/pcfAI"
+
+if [[ -f "${PROJECT_ROOT}/VERSION" ]]; then
+  echo "AetherOS $(cat "${PROJECT_ROOT}/VERSION")"
+else
+  echo "AetherOS version unknown"
+fi

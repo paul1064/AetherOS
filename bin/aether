@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# MIT License
+
+set -euo pipefail
+
+PROJECT_ROOT="/home/miqua/Desktop/pcfAI"
+
+usage() {
+  cat <<'EOF'
+usage: aether <command> [args]
+
+commands:
+  install        run install.sh
+  up             start the AetherOS stack
+  down           stop the AetherOS stack
+  recover        recover and export a report
+  status         show current status
+  operator       open operator console
+  verify         run smoke verification
+  report         export JSON report
+  governance     governance CLI passthrough
+  models         model manager passthrough
+  memory         memory query passthrough
+  meta           meta-agent CLI passthrough
+  version        print version
+  env            create local .env from example
+EOF
+}
+
+cmd="${1:-}"
+if [[ -z "${cmd}" ]]; then
+  usage
+  exit 1
+fi
+shift || true
+
+case "${cmd}" in
+  install)
+    exec "${PROJECT_ROOT}/install.sh" "$@"
+    ;;
+  up)
+    exec "${PROJECT_ROOT}/bin/aether-up" "$@"
+    ;;
+  down)
+    exec "${PROJECT_ROOT}/bin/aether-down" "$@"
+    ;;
+  recover)
+    exec "${PROJECT_ROOT}/bin/aether-recover" "$@"
+    ;;
+  status)
+    exec "${PROJECT_ROOT}/bin/aether-status" "$@"
+    ;;
+  operator)
+    exec "${PROJECT_ROOT}/bin/aether-operator" "$@"
+    ;;
+  verify)
+    exec "${PROJECT_ROOT}/bin/aether-verify" "$@"
+    ;;
+  report)
+    exec "${PROJECT_ROOT}/bin/aether-report" "$@"
+    ;;
+  governance)
+    exec "${PROJECT_ROOT}/bin/aether-governance" "$@"
+    ;;
+  models)
+    exec "${PROJECT_ROOT}/bin/aether-models" "$@"
+    ;;
+  memory)
+    exec "${PROJECT_ROOT}/bin/aether-memory-query" "$@"
+    ;;
+  meta)
+    exec "${PROJECT_ROOT}/bin/aether-meta" "$@"
+    ;;
+  version)
+    exec "${PROJECT_ROOT}/bin/aether-version" "$@"
+    ;;
+  env)
+    exec "${PROJECT_ROOT}/bin/aether-env" "$@"
+    ;;
+  *)
+    usage
+    exit 1
+    ;;
+esac

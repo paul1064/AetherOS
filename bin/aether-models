@@ -1,0 +1,88 @@
+#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+# MIT License
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
+
+from aether_core import list_models, load_models_registry, record_audit, record_system_event, seed_model_registry, update_model_status
+
+
+def ollama_list_names() -> set[str]:
+    proc = subprocess.run(["ollama", "list"], text=True, capture_output=True, timeout=120)
+    output = proc.stdout.strip().splitlines()
+    names: set[str] = set()
+    for line in output[1:]:
+        parts = line.split()
+        if parts:
+            names.add(parts[0])
+    return names
+
+
+def refresh_installed_models() -> list[dict]:
+    seed_model_registry()
+    installed = ollama_list_names()
+    for row in list_models():
+        update_model_status(str(row["model_name"]), str(row["model_name"]) in installed, details_seen=False)
+    return [dict(row) for row in list_models()]
+
+
+def pull_model(model_name: str) -> int:
+    proc = subprocess.run(["ollama", "pull", model_name], text=True, capture_output=True, timeout=7200)
+    output = (proc.stdout + "\n" + proc.stderr).strip()
+    ok = proc.returncode == 0
+    update_model_status(model_name, ok)
+    record_audit("model-manager", "pull_model", model_name, "success" if ok else "failed", output[:1000])
+    if ok:
+        record_system_event("model-manager", "info", f"model pulled: {model_name}")
+    else:
+        record_system_event("model-manager", "error", f"model pull failed: {model_name}")
+    print(output)
+    return 0 if ok else 1
+
+
+def seed_defaults() -> int:
+    registry = load_models_registry().get("models", {})
+    rc = 0
+    for model_name, meta in registry.items():
+        if bool(meta.get("enabled", True)) and bool(meta.get("auto_pull", False)):
+            rc = max(rc, pull_model(model_name))
+    return rc
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="AetherOS model manager")
+    parser.add_argument("--list", action="store_true")
+    parser.add_argument("--refresh", action="store_true")
+    parser.add_argument("--pull")
+    parser.add_argument("--seed-defaults", action="store_true")
+    args = parser.parse_args()
+
+    if args.seed_defaults:
+        return seed_defaults()
+
+    if args.pull:
+        return pull_model(args.pull)
+
+    if args.refresh:
+        print(json.dumps(refresh_installed_models(), indent=2))
+        return 0
+
+    if args.list:
+        seed_model_registry()
+        print(json.dumps([dict(row) for row in list_models()], indent=2))
+        return 0
+
+    parser.print_help()
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

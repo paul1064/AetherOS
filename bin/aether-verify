@@ -1,0 +1,94 @@
+#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+# MIT License
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
+
+from aether_core import load_config
+
+
+UNITS = [
+    "aether-bootstrap.service",
+    "aether-supervisor.service",
+    "aether-orchestrator.service",
+    "aether-executor.service",
+    "aether-vector-memory.service",
+    "aether-memory-curator.service",
+    "aether-selfheal.service",
+    "aether-resource.service",
+    "aether-api.service",
+    "aether-meta.service",
+]
+
+
+def run_checked(command: list[str]) -> tuple[bool, str]:
+    proc = subprocess.run(command, text=True, capture_output=True, timeout=60)
+    output = (proc.stdout + "\n" + proc.stderr).strip()
+    return proc.returncode == 0, output
+
+
+def unit_status(unit_name: str) -> dict[str, str]:
+    ok, output = run_checked(["systemctl", "is-active", unit_name])
+    return {"unit": unit_name, "status": output.strip() if output else ("active" if ok else "unknown")}
+
+
+def api_health() -> dict[str, str]:
+    cfg = load_config().raw["runtime"]
+    url = f"http://{cfg['api_host']}:{cfg['api_port']}/healthz"
+    ok, output = run_checked(["curl", "-sf", url])
+    return {"url": url, "status": "ok" if ok else "failed", "output": output}
+
+
+def file_checks() -> list[dict[str, str]]:
+    paths = [
+        PROJECT_ROOT / "config" / "aether.yaml",
+        PROJECT_ROOT / "config" / "policy.yaml",
+        PROJECT_ROOT / "data" / "sqlite" / "aether.db",
+        PROJECT_ROOT / "data" / "graph" / "memory_graph.json",
+    ]
+    result: list[dict[str, str]] = []
+    for path in paths:
+        result.append({"path": str(path), "status": "present" if path.exists() else "missing"})
+    return result
+
+
+def smoke_report() -> dict:
+    return {
+        "units": [unit_status(unit) for unit in UNITS],
+        "api": api_health(),
+        "files": file_checks(),
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="AetherOS smoke verification")
+    parser.add_argument("--json", action="store_true")
+    args = parser.parse_args()
+
+    report = smoke_report()
+    if args.json:
+        print(json.dumps(report, indent=2))
+        return 0
+
+    print("AetherOS Verification")
+    print("Units")
+    for row in report["units"]:
+        print(f"- {row['unit']}: {row['status']}")
+    print("API")
+    print(f"- {report['api']['url']}: {report['api']['status']}")
+    print("Files")
+    for row in report["files"]:
+        print(f"- {row['path']}: {row['status']}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

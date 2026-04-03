@@ -1,0 +1,78 @@
+#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+# MIT License
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
+
+from aether_core import (
+    command_allowed_for_source,
+    emit_event,
+    fetch_ready_proposals,
+    init_event_bus,
+    mark_proposal_executed,
+    record_audit,
+    record_system_event,
+    run_command,
+    sleep_loop,
+)
+
+LOG_PATH = PROJECT_ROOT / "runtime" / "logs" / "executor.log"
+
+
+def log(message: str) -> None:
+    LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with LOG_PATH.open("a", encoding="utf-8") as handle:
+        handle.write(f"{message}\n")
+
+
+def execute_ready_proposals() -> None:
+    for proposal in fetch_ready_proposals():
+        proposal_id = int(proposal["id"])
+        command = proposal["proposed_command"]
+        source = str(proposal["source"])
+        allowed, reason = command_allowed_for_source(source, command)
+
+        if not allowed:
+            message = f"proposal {proposal_id} blocked by policy: {reason}"
+            record_audit(source, "execute_command", command, "blocked", message)
+            record_system_event("executor", "warning", message)
+            mark_proposal_executed(proposal_id, message)
+            emit_event(
+                "executor.command.blocked",
+                "executor",
+                {"proposal_id": proposal_id, "command": command, "reason": reason, "source": source},
+            )
+            continue
+
+        rc, output = run_command(command)
+        combined = f"exit_code={rc}\n{output}".strip()
+        mark_proposal_executed(proposal_id, combined)
+        record_audit(source, "execute_command", command, "success" if rc == 0 else "failed", combined[:1000])
+        emit_event(
+            "executor.command.finished",
+            "executor",
+            {"proposal_id": proposal_id, "command": command, "exit_code": rc, "source": source},
+        )
+        log(f"executed proposal={proposal_id} exit_code={rc}")
+
+
+def main() -> None:
+    init_event_bus()
+    log("executor_started")
+    while True:
+        try:
+            execute_ready_proposals()
+        except Exception as exc:
+            message = f"executor_cycle_failed: {exc}"
+            log(message)
+            record_system_event("executor", "error", message)
+        sleep_loop(2)
+
+
+if __name__ == "__main__":
+    main()

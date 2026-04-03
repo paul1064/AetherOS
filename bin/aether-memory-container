@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# MIT License
+
+set -euo pipefail
+
+AETHER_ROOT="/home/miqua/Desktop/pcfAI"
+IMAGE_NAME="localhost/aether-memory:0.1.0"
+CONTAINER_NAME="aether-memory"
+
+export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+
+podman build \
+  -t "${IMAGE_NAME}" \
+  -f "${AETHER_ROOT}/containers/memory-service/Containerfile" \
+  "${AETHER_ROOT}"
+
+if podman container exists "${CONTAINER_NAME}"; then
+  podman rm -f "${CONTAINER_NAME}"
+fi
+
+podman run -d \
+  --name "${CONTAINER_NAME}" \
+  --restart=always \
+  -v "${AETHER_ROOT}/data:/data" \
+  "${IMAGE_NAME}"

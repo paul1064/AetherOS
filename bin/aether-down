@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# MIT License
+
+set -euo pipefail
+
+SERVICES=(
+  aether-api.service
+  aether-meta.service
+  aether-resource.service
+  aether-selfheal.service
+  aether-memory-curator.service
+  aether-vector-memory.service
+  aether-executor.service
+  aether-orchestrator.service
+  aether-supervisor.service
+  aether-models.service
+)
+
+systemctl stop "${SERVICES[@]}" || true
+echo "AetherOS stopped"

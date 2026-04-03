@@ -1,0 +1,8 @@
+#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+# MIT License
+
+from __future__ import annotations
+
+import runpy
+
+runpy.run_path("/home/miqua/Desktop/pcfAI/agents/memory/vector_memory_agent.py", run_name="__main__")
