@@ -1,0 +1,12 @@
+[Unit]
+Description=AetherOS Snapshot Service
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/miqua/Desktop/pcfAI/install/snapshot-manager.sh / /.snapshots boot
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

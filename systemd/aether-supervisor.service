@@ -1,0 +1,16 @@
+[Unit]
+Description=AetherOS Supervisor
+After=aether-bootstrap.service network-online.target ollama.service
+Wants=network-online.target ollama.service
+Requires=aether-bootstrap.service
+
+[Service]
+Type=simple
+ExecStart=/home/miqua/Desktop/pcfAI/bin/aether-supervisor
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

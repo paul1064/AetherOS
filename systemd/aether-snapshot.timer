@@ -1,0 +1,11 @@
+[Unit]
+Description=Run periodic AetherOS snapshots
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=1h
+Unit=aether-snapshot.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target

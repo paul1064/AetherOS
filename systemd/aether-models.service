@@ -1,0 +1,15 @@
+[Unit]
+Description=AetherOS Model Seeder
+After=network-online.target ollama.service
+Wants=network-online.target ollama.service
+
+[Service]
+Type=oneshot
+ExecStart=/home/miqua/Desktop/pcfAI/bin/aether-models --seed-defaults
+WorkingDirectory=/home/miqua/Desktop/pcfAI
+Environment=PYTHONPATH=/home/miqua/Desktop/pcfAI/lib
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

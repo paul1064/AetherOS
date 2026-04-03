@@ -1,0 +1,12 @@
+[aether-bootstrap] Bootstrap runtime starting
+[aether-bootstrap] ERROR: required binary missing: sqlite3
+[aether-bootstrap] Bootstrap runtime starting
+[aether-bootstrap] ERROR: required binary missing: sqlite3
+[aether-bootstrap] Bootstrap runtime starting
+[aether-bootstrap] ERROR: required binary missing: sqlite3
+[aether-bootstrap] Bootstrap runtime starting
+[aether-bootstrap] Primary model qwen3-coder not found locally
+[aether-bootstrap] Attempting model pull
+[aether-bootstrap] WARN: model pull failed; continue for now
+[aether-bootstrap] SQLite bootstrap complete
+[aether-bootstrap] Bootstrap runtime finished successfully

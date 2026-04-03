@@ -1,0 +1,17 @@
+[Unit]
+Description=AetherOS Memory Curator
+After=aether-bootstrap.service aether-vector-memory.service
+Requires=aether-bootstrap.service
+
+[Service]
+Type=simple
+ExecStart=/home/miqua/Desktop/pcfAI/bin/aether-memory-curator
+Restart=always
+RestartSec=3
+WorkingDirectory=/home/miqua/Desktop/pcfAI
+Environment=PYTHONPATH=/home/miqua/Desktop/pcfAI/lib
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

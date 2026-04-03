@@ -1,0 +1,18 @@
+[Unit]
+Description=AetherOS Orchestrator
+After=network-online.target ollama.service aether-bootstrap.service
+Wants=network-online.target ollama.service
+Requires=aether-bootstrap.service
+
+[Service]
+Type=simple
+ExecStart=/home/miqua/Desktop/pcfAI/bin/aether-orchestrator
+Restart=always
+RestartSec=3
+WorkingDirectory=/home/miqua/Desktop/pcfAI
+Environment=PYTHONPATH=/home/miqua/Desktop/pcfAI/lib
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
