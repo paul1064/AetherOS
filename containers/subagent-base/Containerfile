@@ -1,0 +1,11 @@
+FROM docker.io/library/python:3.12-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y jq && rm -rf /var/lib/apt/lists/*
+
+COPY containers/subagent-base/run_subagent.sh /app/run_subagent.sh
+
+RUN chmod +x /app/run_subagent.sh
+
+CMD ["/app/run_subagent.sh"]

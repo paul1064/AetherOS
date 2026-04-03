@@ -1,0 +1,35 @@
+policy:
+  mode: "deny-by-default"
+
+  allowed_read_commands:
+    - "ls"
+    - "cat"
+    - "journalctl"
+    - "systemctl status"
+    - "podman ps"
+    - "podman images"
+    - "ollama list"
+    - "free"
+    - "df"
+    - "uptime"
+
+  allowed_write_commands: []
+
+  blocked_patterns:
+    - "rm -rf /"
+    - "mkfs"
+    - "dd if="
+    - "shutdown"
+    - "reboot"
+    - "userdel"
+    - "passwd"
+    - "chmod 777 -R /"
+    - "curl | sh"
+
+  require_confirmation_for:
+    - "apt"
+    - "systemctl restart"
+    - "systemctl enable"
+    - "podman run"
+    - "podman build"
+    - "btrfs subvolume snapshot"

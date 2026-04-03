@@ -1,0 +1,110 @@
+system:
+  name: "AetherOS"
+  version: "0.1.0-bootstrap"
+  root: "/home/miqua/Desktop/pcfAI"
+  license: "MIT"
+
+runtime:
+  user: "miqua"
+  socket_dir: "/home/miqua/Desktop/pcfAI/runtime/sockets"
+  state_dir: "/home/miqua/Desktop/pcfAI/runtime/state"
+  lock_dir: "/home/miqua/Desktop/pcfAI/runtime/locks"
+  log_dir: "/home/miqua/Desktop/pcfAI/runtime/logs"
+  api_host: "127.0.0.1"
+  api_port: 8011
+  operator_refresh_sec: 3
+
+ai:
+  provider: "ollama"
+  host: "http://127.0.0.1:11434"
+  primary_model: "qwen3-coder"
+  planner_model: "qwen3-coder"
+  code_model: "qwen3-coder"
+  memory_model: "qwen3-coder"
+  vision_model: ""
+  speech_to_text_model: ""
+  registry_file: "/home/miqua/Desktop/pcfAI/config/models.yaml"
+  auto_pull_enabled_models: true
+
+agents:
+  supervisor:
+    enabled: true
+  orchestrator:
+    enabled: true
+    container_name: "aether-orchestrator"
+  memory:
+    enabled: true
+    container_name: "aether-memory"
+  selfheal:
+    enabled: true
+    container_name: "aether-selfheal"
+  resource:
+    enabled: true
+    container_name: "aether-resource"
+  nlshell:
+    enabled: true
+    container_name: "aether-shell"
+  meta:
+    enabled: true
+    container_name: "aether-meta"
+
+containers:
+  engine: "podman"
+  rootless: true
+  network: "slirp4netns"
+
+memory:
+  sqlite_path: "/home/miqua/Desktop/pcfAI/data/sqlite/aether.db"
+  chroma_path: "/home/miqua/Desktop/pcfAI/data/chroma"
+  graph_path: "/home/miqua/Desktop/pcfAI/data/graph"
+  retention_days: 3650
+  graph_file: "/home/miqua/Desktop/pcfAI/data/graph/memory_graph.json"
+  curator_interval_sec: 20
+
+desktop:
+  enabled: true
+  compositor: "Hyprland"
+  hypr_config: "/home/miqua/Desktop/pcfAI/desktop/hypr/hyprland.conf"
+  waybar_config: "/home/miqua/Desktop/pcfAI/desktop/waybar/config.jsonc"
+  waybar_style: "/home/miqua/Desktop/pcfAI/desktop/waybar/style.css"
+
+safety:
+  confirmation_required: true
+  host_command_policy: "deny-by-default"
+  allow_package_installs: false
+  allow_systemd_mutations: false
+
+self_healing:
+  enabled: true
+  journal_scan_interval_sec: 30
+  auto_remediation: true
+  restart_limit_per_hour: 3
+  monitored_units:
+    - "aether-orchestrator.service"
+    - "aether-executor.service"
+    - "aether-vector-memory.service"
+    - "aether-supervisor.service"
+
+resource_intelligence:
+  enabled: true
+  sampling_interval_sec: 15
+  power_profile: "balanced"
+  cpu_high_watermark_pct: 85
+  memory_high_watermark_pct: 90
+
+multimodal:
+  screenshot_dir: "/home/miqua/Desktop/pcfAI/data/captures"
+  voice_dir: "/home/miqua/Desktop/pcfAI/data/voice"
+  whisper_model: "base"
+  screenshot_command_preference:
+    - "grim"
+    - "gnome-screenshot"
+    - "scrot"
+
+meta_agent:
+  enabled: true
+  jobs_dir: "/home/miqua/Desktop/pcfAI/data/meta/jobs"
+  runs_dir: "/home/miqua/Desktop/pcfAI/data/meta/runs"
+  max_parallel_jobs: 2
+  default_image: "localhost/aether-subagent:0.1.0"
+  auto_start_queued_jobs: true

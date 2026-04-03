@@ -1,0 +1,19 @@
+models:
+  qwen3-coder:
+    role: "primary"
+    enabled: true
+    auto_pull: true
+    size_hint: "large"
+    description: "Primary coding and reasoning brain"
+  qwen2.5:3b:
+    role: "assistant"
+    enabled: true
+    auto_pull: false
+    size_hint: "small"
+    description: "Lightweight fallback and routing assistant"
+  llava:
+    role: "vision"
+    enabled: false
+    auto_pull: false
+    size_hint: "large"
+    description: "Vision-capable local multimodal model"
