@@ -3,7 +3,8 @@
 
 set -euo pipefail
 
-AETHER_ROOT="/home/miqua/Desktop/pcfAI"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+AETHER_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 STATE_DIR="${AETHER_ROOT}/runtime/state"
 LOG_DIR="${AETHER_ROOT}/runtime/logs"
 SQLITE_DB="${AETHER_ROOT}/data/sqlite/aether.db"

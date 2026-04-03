@@ -1,4 +1,4 @@
-#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+#!/usr/bin/env python3
 # MIT License
 
 from __future__ import annotations
@@ -6,10 +6,17 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
-PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+def discover_project_root() -> Path:
+    for candidate in Path(__file__).resolve().parents:
+        if (candidate / "config" / "aether.yaml").exists():
+            return candidate
+    raise RuntimeError("Unable to determine AetherOS project root")
+
+
+PROJECT_ROOT = discover_project_root()
 sys.path.insert(0, str(PROJECT_ROOT / "lib"))
 
 from aether_core import (
@@ -41,7 +48,7 @@ def collect_journal(unit_name: str, lines: int = 20) -> str:
 
 def build_report() -> dict:
     return {
-        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "generated_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "config": load_config().raw,
         "version": (PROJECT_ROOT / "VERSION").read_text(encoding="utf-8").strip() if (PROJECT_ROOT / "VERSION").exists() else "unknown",
         "agents": [dict(row) for row in fetch_agent_states()],
@@ -68,7 +75,7 @@ def build_report() -> dict:
 def main() -> int:
     report_dir = PROJECT_ROOT / "data" / "reports"
     report_dir.mkdir(parents=True, exist_ok=True)
-    path = report_dir / f"aether-report-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}.json"
+    path = report_dir / f"aether-report-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}.json"
     path.write_text(json.dumps(build_report(), indent=2), encoding="utf-8")
     print(str(path))
     return 0

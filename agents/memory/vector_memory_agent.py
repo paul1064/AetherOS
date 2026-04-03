@@ -7,7 +7,14 @@ import sys
 import time
 from pathlib import Path
 
-PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
+def discover_project_root() -> Path:
+    for candidate in Path(__file__).resolve().parents:
+        if (candidate / "config" / "aether.yaml").exists():
+            return candidate
+    raise RuntimeError("Unable to determine AetherOS project root")
+
+
+PROJECT_ROOT = discover_project_root()
 sys.path.insert(0, str(PROJECT_ROOT / "lib"))
 
 from aether_core import index_memory_document, timestamp_id

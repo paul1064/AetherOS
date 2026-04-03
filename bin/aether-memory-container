@@ -3,7 +3,8 @@
 
 set -euo pipefail
 
-AETHER_ROOT="/home/miqua/Desktop/pcfAI"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+AETHER_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 IMAGE_NAME="localhost/aether-memory:0.1.0"
 CONTAINER_NAME="aether-memory"
 

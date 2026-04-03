@@ -3,7 +3,8 @@
 
 set -euo pipefail
 
-AETHER_ROOT="/home/miqua/Desktop/pcfAI"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+AETHER_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 RUNTIME_DIR="${AETHER_ROOT}/runtime"
 LOG_FILE="${RUNTIME_DIR}/logs/bootstrap-runtime.log"
 
