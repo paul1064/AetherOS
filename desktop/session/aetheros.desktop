@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=AetherOS
+Comment=Agentic Linux session powered by local AI
+Exec=/home/miqua/Desktop/pcfAI/bin/aether-session
+Type=Application
+DesktopNames=AetherOS

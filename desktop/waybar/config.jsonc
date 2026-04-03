@@ -1,0 +1,34 @@
+{
+  "layer": "top",
+  "position": "top",
+  "height": 34,
+  "spacing": 10,
+  "modules-left": ["custom/aether", "hyprland/workspaces"],
+  "modules-center": ["clock"],
+  "modules-right": ["cpu", "memory", "network", "battery", "custom/api"],
+  "custom/aether": {
+    "format": "AetherOS",
+    "tooltip": false
+  },
+  "custom/api": {
+    "exec": "curl -sf http://127.0.0.1:8011/healthz >/dev/null && echo API:up || echo API:down",
+    "interval": 5
+  },
+  "clock": {
+    "format": "{:%a %d %b  %H:%M}"
+  },
+  "cpu": {
+    "format": "CPU {usage}%"
+  },
+  "memory": {
+    "format": "RAM {}%"
+  },
+  "network": {
+    "format-wifi": "{essid} {signalStrength}%",
+    "format-ethernet": "eth",
+    "format-disconnected": "offline"
+  },
+  "battery": {
+    "format": "{capacity}%"
+  }
+}
