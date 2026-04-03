@@ -1,15 +1,15 @@
 system:
   name: "AetherOS"
   version: "0.1.0-bootstrap"
-  root: "/home/miqua/Desktop/pcfAI"
+  root: "."
   license: "MIT"
 
 runtime:
   user: "miqua"
-  socket_dir: "/home/miqua/Desktop/pcfAI/runtime/sockets"
-  state_dir: "/home/miqua/Desktop/pcfAI/runtime/state"
-  lock_dir: "/home/miqua/Desktop/pcfAI/runtime/locks"
-  log_dir: "/home/miqua/Desktop/pcfAI/runtime/logs"
+  socket_dir: "runtime/sockets"
+  state_dir: "runtime/state"
+  lock_dir: "runtime/locks"
+  log_dir: "runtime/logs"
   api_host: "127.0.0.1"
   api_port: 8011
   operator_refresh_sec: 3
@@ -23,7 +23,7 @@ ai:
   memory_model: "qwen3-coder"
   vision_model: ""
   speech_to_text_model: ""
-  registry_file: "/home/miqua/Desktop/pcfAI/config/models.yaml"
+  registry_file: "config/models.yaml"
   auto_pull_enabled_models: true
 
 agents:
@@ -54,19 +54,19 @@ containers:
   network: "slirp4netns"
 
 memory:
-  sqlite_path: "/home/miqua/Desktop/pcfAI/data/sqlite/aether.db"
-  chroma_path: "/home/miqua/Desktop/pcfAI/data/chroma"
-  graph_path: "/home/miqua/Desktop/pcfAI/data/graph"
+  sqlite_path: "data/sqlite/aether.db"
+  chroma_path: "data/chroma"
+  graph_path: "data/graph"
   retention_days: 3650
-  graph_file: "/home/miqua/Desktop/pcfAI/data/graph/memory_graph.json"
+  graph_file: "data/graph/memory_graph.json"
   curator_interval_sec: 20
 
 desktop:
   enabled: true
   compositor: "Hyprland"
-  hypr_config: "/home/miqua/Desktop/pcfAI/desktop/hypr/hyprland.conf"
-  waybar_config: "/home/miqua/Desktop/pcfAI/desktop/waybar/config.jsonc"
-  waybar_style: "/home/miqua/Desktop/pcfAI/desktop/waybar/style.css"
+  hypr_config: "desktop/hypr/hyprland.conf"
+  waybar_config: "desktop/waybar/config.jsonc"
+  waybar_style: "desktop/waybar/style.css"
 
 safety:
   confirmation_required: true
@@ -93,8 +93,8 @@ resource_intelligence:
   memory_high_watermark_pct: 90
 
 multimodal:
-  screenshot_dir: "/home/miqua/Desktop/pcfAI/data/captures"
-  voice_dir: "/home/miqua/Desktop/pcfAI/data/voice"
+  screenshot_dir: "data/captures"
+  voice_dir: "data/voice"
   whisper_model: "base"
   screenshot_command_preference:
     - "grim"
@@ -103,8 +103,8 @@ multimodal:
 
 meta_agent:
   enabled: true
-  jobs_dir: "/home/miqua/Desktop/pcfAI/data/meta/jobs"
-  runs_dir: "/home/miqua/Desktop/pcfAI/data/meta/runs"
+  jobs_dir: "data/meta/jobs"
+  runs_dir: "data/meta/runs"
   max_parallel_jobs: 2
   default_image: "localhost/aether-subagent:0.1.0"
   auto_start_queued_jobs: true

@@ -3,7 +3,8 @@
 
 set -euo pipefail
 
-AETHER_ROOT="/home/miqua/Desktop/pcfAI"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+AETHER_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 AETHER_USER="${SUDO_USER:-miqua}"
 VENV_PATH="${AETHER_ROOT}/.venv"
 
