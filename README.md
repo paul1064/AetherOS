@@ -1,47 +1,47 @@
 MIT License
 
-# AetherOS (made with ChatGPT Codex)
+# AetherOS
 
-Project root: `/home/miqua/Desktop/pcfAI`
+Project root: repository root `AetherOS/`
 
-This repository contains the current AetherOS bootstrap, runtime, API, self-healing, resource-intelligence, multimodal and installer files, all rooted at `/home/miqua/Desktop/pcfAI`.
+This repository contains the current AetherOS bootstrap, runtime, API, self-healing, resource-intelligence, multimodal and installer files, all rooted at the GitHub repository root `AetherOS/`.
 
 ## Quick start
 
 1. Review and run:
-   `sudo bash /home/miqua/Desktop/pcfAI/bootstrap/prepare-base.sh`
+   `sudo bash bootstrap/prepare-base.sh`
 2. Install the project runtime:
-   `sudo bash /home/miqua/Desktop/pcfAI/bootstrap/firstboot.sh`
+   `sudo bash bootstrap/firstboot.sh`
 3. Install systemd units from the project directory:
-   `sudo cp /home/miqua/Desktop/pcfAI/systemd/*.service /etc/systemd/system/`
+   `sudo cp systemd/*.service /etc/systemd/system/`
 4. Reload and enable services:
    `sudo systemctl daemon-reload`
    `sudo systemctl enable aether-bootstrap.service aether-supervisor.service aether-orchestrator.service aether-executor.service aether-vector-memory.service aether-selfheal.service aether-resource.service aether-api.service`
    `sudo systemctl restart aether-bootstrap.service aether-supervisor.service aether-orchestrator.service aether-executor.service aether-vector-memory.service aether-selfheal.service aether-resource.service aether-api.service`
 5. Optional full-machine install workflow:
-   `sudo bash /home/miqua/Desktop/pcfAI/install/install-aetheros.sh --root-mount /mnt/aether-target`
+   `sudo bash install/install-aetheros.sh --root-mount /mnt/aether-target`
 6. Optional operator console:
-   `/home/miqua/Desktop/pcfAI/bin/aether-operator`
+   `bin/aether-operator`
 7. Governance inspection:
-   `/home/miqua/Desktop/pcfAI/bin/aether-governance --profiles`
+   `bin/aether-governance --profiles`
 8. Smoke verification:
-   `/home/miqua/Desktop/pcfAI/bin/aether-verify`
+   `bin/aether-verify`
 9. Report export:
-   `/home/miqua/Desktop/pcfAI/bin/aether-report`
+   `bin/aether-report`
 10. Model registry:
-   `/home/miqua/Desktop/pcfAI/bin/aether-models --list`
+   `bin/aether-models --list`
 11. Start full stack:
-   `sudo /home/miqua/Desktop/pcfAI/bin/aether-up`
+   `sudo bin/aether-up`
 12. Recover stack:
-   `sudo /home/miqua/Desktop/pcfAI/bin/aether-recover`
+   `sudo bin/aether-recover`
 13. One-command install:
-   `sudo bash /home/miqua/Desktop/pcfAI/install.sh`
+   `sudo bash install.sh`
 14. Release export:
-   `bash /home/miqua/Desktop/pcfAI/install/export-release.sh`
+   `bash install/export-release.sh`
 15. Unified CLI:
-   `/home/miqua/Desktop/pcfAI/bin/aether status`
+   `bin/aether status`
 16. Create local env file:
-   `/home/miqua/Desktop/pcfAI/bin/aether env`
+   `bin/aether env`
 
 ## Layout
 
