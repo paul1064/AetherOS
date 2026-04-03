@@ -3,7 +3,8 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="/home/miqua/Desktop/pcfAI"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 OUTPUT_DIR="${1:-${PROJECT_ROOT}/dist}"
 VERSION="$(cat "${PROJECT_ROOT}/VERSION")"
 ARCHIVE_NAME="aetheros-${VERSION}.tar.gz"

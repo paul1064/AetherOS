@@ -3,7 +3,8 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="/home/miqua/Desktop/pcfAI"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 TARGET_MOUNT=""
 TARGET_DISK=""
 TARGET_USER="${SUDO_USER:-miqua}"
@@ -76,21 +77,21 @@ rsync -a --delete \
   --exclude '.venv' \
   --exclude 'runtime/logs/*' \
   "${PROJECT_ROOT}/" \
-  "${TARGET_MOUNT}/home/${TARGET_USER}/Desktop/pcfAI/"
+  "${TARGET_MOUNT}/home/${TARGET_USER}/Desktop/AetherOS/"
 
-chroot "${TARGET_MOUNT}" /bin/bash -lc "chown -R ${TARGET_USER}:${TARGET_USER} /home/${TARGET_USER}/Desktop/pcfAI"
+chroot "${TARGET_MOUNT}" /bin/bash -lc "chown -R ${TARGET_USER}:${TARGET_USER} /home/${TARGET_USER}/Desktop/AetherOS"
 
-cat > "${TARGET_MOUNT}/home/${TARGET_USER}/Desktop/pcfAI/install/POST_INSTALL.txt" <<EOF
+cat > "${TARGET_MOUNT}/home/${TARGET_USER}/Desktop/AetherOS/install/POST_INSTALL.txt" <<EOF
 AetherOS project copied successfully.
 
 Next steps inside the target system:
-1. sudo bash /home/${TARGET_USER}/Desktop/pcfAI/bootstrap/prepare-base.sh
-2. sudo bash /home/${TARGET_USER}/Desktop/pcfAI/bootstrap/firstboot.sh
-3. sudo cp /home/${TARGET_USER}/Desktop/pcfAI/systemd/*.service /etc/systemd/system/
+1. sudo bash /home/${TARGET_USER}/Desktop/AetherOS/bootstrap/prepare-base.sh
+2. sudo bash /home/${TARGET_USER}/Desktop/AetherOS/bootstrap/firstboot.sh
+3. sudo cp /home/${TARGET_USER}/Desktop/AetherOS/systemd/*.service /etc/systemd/system/
 4. sudo systemctl daemon-reload
 5. sudo systemctl enable aether-bootstrap.service aether-supervisor.service aether-orchestrator.service aether-executor.service aether-vector-memory.service aether-selfheal.service aether-resource.service aether-api.service
 6. sudo systemctl restart aether-bootstrap.service aether-supervisor.service aether-orchestrator.service aether-executor.service aether-vector-memory.service aether-selfheal.service aether-resource.service aether-api.service
 EOF
 
-echo "[INFO] AetherOS payload copied to ${TARGET_MOUNT}/home/${TARGET_USER}/Desktop/pcfAI"
+echo "[INFO] AetherOS payload copied to ${TARGET_MOUNT}/home/${TARGET_USER}/Desktop/AetherOS"
 echo "[INFO] Post-install instructions written to install/POST_INSTALL.txt"

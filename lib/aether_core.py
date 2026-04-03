@@ -1,9 +1,10 @@
-#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+#!/usr/bin/env python3
 # MIT License
 
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import subprocess
 import time
@@ -17,10 +18,59 @@ import requests
 import yaml
 
 
-AETHER_ROOT = Path("/home/miqua/Desktop/pcfAI")
+AETHER_ROOT_ENV = "AETHER_ROOT"
+
+
+def discover_aether_root() -> Path:
+    env_root = os.environ.get(AETHER_ROOT_ENV)
+    if env_root:
+        return Path(env_root).expanduser().resolve()
+
+    for candidate in Path(__file__).resolve().parents:
+        if (candidate / "config" / "aether.yaml").exists():
+            return candidate
+
+    raise RuntimeError("Unable to determine AetherOS project root")
+
+
+AETHER_ROOT = discover_aether_root()
 CONFIG_PATH = AETHER_ROOT / "config" / "aether.yaml"
 POLICY_PATH = AETHER_ROOT / "config" / "policy.yaml"
 MODELS_PATH = AETHER_ROOT / "config" / "models.yaml"
+
+
+def resolve_repo_path(value: str) -> str:
+    path = Path(value).expanduser()
+    if path.is_absolute():
+        return str(path)
+    return str((AETHER_ROOT / path).resolve())
+
+
+def resolve_config_paths(raw: dict[str, Any]) -> dict[str, Any]:
+    path_fields = (
+        ("system", "root"),
+        ("runtime", "socket_dir"),
+        ("runtime", "state_dir"),
+        ("runtime", "lock_dir"),
+        ("runtime", "log_dir"),
+        ("ai", "registry_file"),
+        ("memory", "sqlite_path"),
+        ("memory", "chroma_path"),
+        ("memory", "graph_path"),
+        ("memory", "graph_file"),
+        ("desktop", "hypr_config"),
+        ("desktop", "waybar_config"),
+        ("desktop", "waybar_style"),
+        ("multimodal", "screenshot_dir"),
+        ("multimodal", "voice_dir"),
+        ("meta_agent", "jobs_dir"),
+        ("meta_agent", "runs_dir"),
+    )
+    for section, key in path_fields:
+        section_data = raw.get(section)
+        if isinstance(section_data, dict) and isinstance(section_data.get(key), str):
+            section_data[key] = resolve_repo_path(section_data[key])
+    return raw
 
 
 @dataclass
@@ -66,7 +116,7 @@ def load_yaml(path: Path) -> dict[str, Any]:
 
 
 def load_config() -> AetherConfig:
-    return AetherConfig(load_yaml(CONFIG_PATH))
+    return AetherConfig(resolve_config_paths(load_yaml(CONFIG_PATH)))
 
 
 def load_policy() -> dict[str, Any]:
@@ -139,11 +189,11 @@ def get_db() -> sqlite3.Connection:
     cfg = load_config()
     db = sqlite3.connect(cfg.sqlite_path)
     db.row_factory = sqlite3.Row
+    ensure_db_schema(db)
     return db
 
 
-def init_event_bus() -> None:
-    db = get_db()
+def ensure_db_schema(db: sqlite3.Connection) -> None:
     db.executescript(
         """
         CREATE TABLE IF NOT EXISTS system_events (
@@ -282,6 +332,10 @@ def init_event_bus() -> None:
         """
     )
     db.commit()
+
+
+def init_event_bus() -> None:
+    db = get_db()
     db.close()
     seed_governance_profiles()
     seed_model_registry()

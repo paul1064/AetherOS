@@ -10,16 +10,16 @@
 ## Install sequence
 
 ```bash
-sudo bash /home/miqua/Desktop/pcfAI/install.sh
-sudo /home/miqua/Desktop/pcfAI/bin/aether-up
+sudo bash install.sh
+sudo bin/aether-up
 ```
 
 ## Required checks
 
 ```bash
-/home/miqua/Desktop/pcfAI/bin/aether version
-/home/miqua/Desktop/pcfAI/bin/aether verify
-/home/miqua/Desktop/pcfAI/bin/aether report
+bin/aether version
+bin/aether verify
+bin/aether report
 curl http://127.0.0.1:8011/healthz
 curl http://127.0.0.1:8011/release/manifest
 ```
@@ -27,12 +27,12 @@ curl http://127.0.0.1:8011/release/manifest
 ## Optional desktop checks
 
 ```bash
-sudo bash /home/miqua/Desktop/pcfAI/install/install-desktop-session.sh
-/home/miqua/Desktop/pcfAI/bin/aether operator
+sudo bash install/install-desktop-session.sh
+bin/aether operator
 ```
 
 ## Recovery sequence
 
 ```bash
-sudo /home/miqua/Desktop/pcfAI/bin/aether recover
+sudo bin/aether recover
 ```

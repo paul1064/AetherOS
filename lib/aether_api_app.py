@@ -1,11 +1,10 @@
-#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+#!/usr/bin/env python3
 # MIT License
 
 from __future__ import annotations
 
 import json
 import subprocess
-from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
@@ -38,7 +37,6 @@ from aether_core import (
     update_governance_profile,
 )
 
-PROJECT_ROOT = Path("/home/miqua/Desktop/pcfAI")
 app = FastAPI(title="AetherOS Local Control API", version="0.4.0")
 
 

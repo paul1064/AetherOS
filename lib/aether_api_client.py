@@ -1,4 +1,4 @@
-#!/home/miqua/Desktop/pcfAI/.venv/bin/python
+#!/usr/bin/env python3
 # MIT License
 
 from __future__ import annotations

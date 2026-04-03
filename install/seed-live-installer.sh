@@ -3,7 +3,8 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="/home/miqua/Desktop/pcfAI"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
 
 mkdir -p /usr/local/bin
 cp "${PROJECT_ROOT}/install/install-aetheros.sh" /usr/local/bin/aetheros-install
