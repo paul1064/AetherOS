@@ -1,0 +1,78 @@
+```
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.ENV
+.ENV.*
+.venv/
+.venv.*
+.python-version
+.python-history
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Build artifacts
+build/
+dist/
+*.egg
+*.egg-info/
+*.so
+*.dylib
+*.dll
+*.exe
+*.o
+*.obj
+*.out
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+.env.*
+!.env.example
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+
+# Distribution / packaging
+.Python
+__pycache__/
+*.py[cod]
+*$py.class
+*$pycache$*
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv/
+.env
+.env.*
+.env.local
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+```

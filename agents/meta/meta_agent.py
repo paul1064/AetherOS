@@ -8,16 +8,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-def discover_project_root() -> Path:
-    for candidate in Path(__file__).resolve().parents:
-        if (candidate / "config" / "aether.yaml").exists():
-            return candidate
-    raise RuntimeError("Unable to determine AetherOS project root")
-
-
-PROJECT_ROOT = discover_project_root()
-sys.path.insert(0, str(PROJECT_ROOT / "lib"))
-
 from aether_core import (
     emit_event,
     fetch_meta_jobs,
@@ -28,6 +18,17 @@ from aether_core import (
     update_meta_job,
     write_agent_state,
 )
+
+
+def discover_project_root() -> Path:
+    for candidate in Path(__file__).resolve().parents:
+        if (candidate / "config" / "aether.yaml").exists():
+            return candidate
+    raise RuntimeError("Unable to determine AetherOS project root")
+
+
+PROJECT_ROOT = discover_project_root()
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
 
 LOG_PATH = PROJECT_ROOT / "runtime" / "logs" / "meta-agent.log"
 

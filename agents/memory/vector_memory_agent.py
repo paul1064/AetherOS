@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # MIT License
 
 from __future__ import annotations
@@ -6,6 +7,9 @@ import sqlite3
 import sys
 import time
 from pathlib import Path
+
+from aether_core import index_memory_document, timestamp_id
+
 
 def discover_project_root() -> Path:
     for candidate in Path(__file__).resolve().parents:
@@ -16,8 +20,6 @@ def discover_project_root() -> Path:
 
 PROJECT_ROOT = discover_project_root()
 sys.path.insert(0, str(PROJECT_ROOT / "lib"))
-
-from aether_core import index_memory_document, timestamp_id
 
 DB_PATH = PROJECT_ROOT / "data" / "sqlite" / "aether.db"
 LOG_PATH = PROJECT_ROOT / "runtime" / "logs" / "vector-memory-agent.log"

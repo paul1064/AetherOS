@@ -1,0 +1,47 @@
+# Include all necessary files for distribution
+include README.md
+include LICENSE
+include VERSION
+include CHANGELOG.md
+include CONTRIBUTING.md
+include SECURITY.md
+include pyproject.toml
+include setup.py
+
+# Include requirements
+recursive-include requirements *.txt
+
+# Include configuration files
+recursive-include config *.yaml *.yml
+
+# Include shell scripts
+recursive-include bin *
+recursive-include bootstrap *.sh
+recursive-include install *.sh
+
+# Include systemd services
+recursive-include systemd *.service
+
+# Include desktop integration files
+recursive-include desktop *.desktop *.conf
+
+# Include Python packages
+recursive-include lib *.py
+recursive-include agents *.py
+
+# Include documentation
+recursive-include docs *.md
+
+# Exclude unnecessary files
+prune __pycache__
+prune .git
+prune .venv
+prune venv
+prune build
+prune dist
+prune *.egg-info
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.log
+global-exclude .DS_Store
+global-exclude Thumbs.db

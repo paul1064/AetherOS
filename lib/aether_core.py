@@ -900,8 +900,8 @@ def mark_event_done(event_id: int) -> None:
 def command_allowed(command: str) -> tuple[bool, str]:
     policy = load_policy()
     for pattern in policy.get("blocked_patterns", []):
-      if pattern in command:
-        return False, f"Blocked by policy pattern: {pattern}"
+        if pattern in command:
+            return False, f"Blocked by policy pattern: {pattern}"
 
     for allowed in policy.get("allowed_read_commands", []):
         if command == allowed or command.startswith(f"{allowed} "):

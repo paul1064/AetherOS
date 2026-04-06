@@ -11,6 +11,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from aether_core import (
+    AETHER_ROOT,
     approve_proposal,
     create_meta_job,
     emit_event,
@@ -144,7 +145,7 @@ def proposal_reject(proposal_id: int, request: NoteRequest) -> dict[str, Any]:
 @app.post("/multimodal/screenshot")
 def multimodal_screenshot() -> dict[str, Any]:
     result = subprocess.run(
-        [str(PROJECT_ROOT / "bin" / "aether-screenshot")],
+        [str(AETHER_ROOT / "bin" / "aether-screenshot")],
         text=True,
         capture_output=True,
         timeout=120,
@@ -158,7 +159,7 @@ def multimodal_screenshot() -> dict[str, Any]:
 @app.post("/multimodal/stt")
 def multimodal_stt(request: SpeechRequest) -> dict[str, Any]:
     result = subprocess.run(
-        [str(PROJECT_ROOT / "bin" / "aether-stt"), request.audio_path],
+        [str(AETHER_ROOT / "bin" / "aether-stt"), request.audio_path],
         text=True,
         capture_output=True,
         timeout=300,
@@ -257,7 +258,7 @@ def model_get(model_name: str) -> dict[str, Any]:
 @app.post("/models/pull")
 def models_pull(request: ModelPullRequest) -> dict[str, Any]:
     result = subprocess.run(
-        [str(PROJECT_ROOT / "bin" / "aether-models"), "--pull", request.model_name],
+        [str(AETHER_ROOT / "bin" / "aether-models"), "--pull", request.model_name],
         text=True,
         capture_output=True,
         timeout=7200,
@@ -271,7 +272,7 @@ def models_pull(request: ModelPullRequest) -> dict[str, Any]:
 @app.get("/verify")
 def verify() -> dict[str, Any]:
     result = subprocess.run(
-        [str(PROJECT_ROOT / "bin" / "aether-verify"), "--json"],
+        [str(AETHER_ROOT / "bin" / "aether-verify"), "--json"],
         text=True,
         capture_output=True,
         timeout=180,
@@ -285,7 +286,7 @@ def verify() -> dict[str, Any]:
 @app.post("/reports/export")
 def reports_export() -> dict[str, Any]:
     result = subprocess.run(
-        [str(PROJECT_ROOT / "bin" / "aether-report")],
+        [str(AETHER_ROOT / "bin" / "aether-report")],
         text=True,
         capture_output=True,
         timeout=300,
@@ -298,7 +299,7 @@ def reports_export() -> dict[str, Any]:
 
 @app.get("/release/manifest")
 def release_manifest() -> dict[str, Any]:
-    manifest_path = PROJECT_ROOT / "RELEASE_MANIFEST.json"
+    manifest_path = AETHER_ROOT / "RELEASE_MANIFEST.json"
     if not manifest_path.exists():
         raise HTTPException(status_code=404, detail="release manifest not found")
     return json.loads(manifest_path.read_text(encoding="utf-8"))
