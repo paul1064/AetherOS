@@ -1,0 +1,125 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aetheros"
+version = "0.13.0"
+description = "Self-organizing AI desktop OS with multi-agent orchestration"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "AetherOS Team", email = "team@aetheros.dev"}
+]
+maintainers = [
+    {name = "AetherOS Team", email = "team@aetheros.dev"}
+]
+keywords = [
+    "ai",
+    "agent",
+    "desktop",
+    "orchestration",
+    "automation",
+    "llm",
+    "operating-system"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Environment :: Desktop Environment",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Desktop Environment",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: System :: Operating System"
+]
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.116.1",
+    "uvicorn>=0.35.0",
+    "pydantic>=2.11.7",
+    "PyYAML>=6.0.2",
+    "requests>=2.32.4",
+    "chromadb>=1.0.20"
+]
+
+[project.optional-dependencies]
+dev = [
+    "flake8>=6.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.0.0",
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pre-commit>=3.0.0"
+]
+docs = [
+    "mkdocs>=1.4.0",
+    "mkdocs-material>=9.0.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/aetheros/aetheros"
+Documentation = "https://github.com/aetheros/aetheros#readme"
+Repository = "https://github.com/aetheros/aetheros.git"
+Issues = "https://github.com/aetheros/aetheros/issues"
+Changelog = "https://github.com/aetheros/aetheros/blob/main/CHANGELOG.md"
+
+[project.scripts]
+aether = "bin.aether:main"
+aether-api = "bin.aether-api:main"
+aether-shell = "bin.aether-shell:main"
+
+[tool.setuptools]
+packages = ["lib", "agents"]
+package-dir = {"" = "."}
+
+[tool.setuptools.package-data]
+"*" = ["*.yaml", "*.yml", "*.desktop", "*.conf"]
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311', 'py312']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+skip = [".venv", "build", "dist"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = ["tests/", "build/", "dist/"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --cov=lib --cov=agents --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["lib", "agents"]
+omit = ["*/tests/*", "*/__pycache__/*"]
+
+[tool.flake8]
+max-line-length = 100
+extend-ignore = "E203"
+exclude = [".venv", "build", "dist", ".git"]

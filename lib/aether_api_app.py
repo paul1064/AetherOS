@@ -11,6 +11,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from aether_core import (
+    AETHER_ROOT,
     approve_proposal,
     create_meta_job,
     emit_event,
@@ -129,7 +130,8 @@ def proposal_get(proposal_id: int) -> dict[str, Any]:
 def proposal_approve(proposal_id: int, request: NoteRequest) -> dict[str, Any]:
     if not approve_proposal(proposal_id, request.note):
         raise HTTPException(status_code=404, detail="Proposal not found")
-    emit_event("proposal.approved", "aether-api", {"proposal_id": proposal_id, "note": request.note})
+    event_data = {"proposal_id": proposal_id, "note": request.note}
+    emit_event("proposal.approved", "aether-api", event_data)
     return {"status": "approved", "proposal_id": proposal_id}
 
 
@@ -137,35 +139,38 @@ def proposal_approve(proposal_id: int, request: NoteRequest) -> dict[str, Any]:
 def proposal_reject(proposal_id: int, request: NoteRequest) -> dict[str, Any]:
     if not reject_proposal(proposal_id, request.note):
         raise HTTPException(status_code=404, detail="Proposal not found")
-    emit_event("proposal.rejected", "aether-api", {"proposal_id": proposal_id, "note": request.note})
+    event_data = {"proposal_id": proposal_id, "note": request.note}
+    emit_event("proposal.rejected", "aether-api", event_data)
     return {"status": "rejected", "proposal_id": proposal_id}
 
 
 @app.post("/multimodal/screenshot")
 def multimodal_screenshot() -> dict[str, Any]:
     result = subprocess.run(
-        [str(PROJECT_ROOT / "bin" / "aether-screenshot")],
+        [str(AETHER_ROOT / "bin" / "aether-screenshot")],
         text=True,
         capture_output=True,
         timeout=120,
     )
     output = (result.stdout + "\n" + result.stderr).strip()
     if result.returncode != 0:
-        raise HTTPException(status_code=500, detail=output or "screenshot failed")
+        error_detail = output or "screenshot failed"
+        raise HTTPException(status_code=500, detail=error_detail)
     return {"status": "ok", "output": output}
 
 
 @app.post("/multimodal/stt")
 def multimodal_stt(request: SpeechRequest) -> dict[str, Any]:
     result = subprocess.run(
-        [str(PROJECT_ROOT / "bin" / "aether-stt"), request.audio_path],
+        [str(AETHER_ROOT / "bin" / "aether-stt"), request.audio_path],
         text=True,
         capture_output=True,
         timeout=300,
     )
     output = (result.stdout + "\n" + result.stderr).strip()
     if result.returncode != 0:
-        raise HTTPException(status_code=500, detail=output or "stt failed")
+        error_detail = output or "stt failed"
+        raise HTTPException(status_code=500, detail=error_detail)
     return {"status": "ok", "output": output}
 
 
@@ -183,7 +188,8 @@ def meta_job_create(request: MetaJobRequest) -> dict[str, Any]:
         image_name=request.image_name,
         notes=request.notes,
     )
-    emit_event("meta.job.queued", "aether-api", {"job_id": job_id, "name": request.name, "role": request.role})
+    event_data = {"job_id": job_id, "name": request.name, "role": request.role}
+    emit_event("meta.job.queued", "aether-api", event_data)
     return {"status": "queued", "job_id": job_id}
 
 
@@ -228,12 +234,16 @@ def governance_profiles() -> list[dict[str, Any]]:
 @app.post("/governance/profiles")
 def governance_profile_update(request: GovernanceProfileRequest) -> dict[str, Any]:
     update_governance_profile(request.source_name, request.capability_profile)
-    emit_event(
-        "governance.profile.updated",
-        "aether-api",
-        {"source_name": request.source_name, "capability_profile": request.capability_profile},
-    )
-    return {"status": "updated", "source_name": request.source_name, "capability_profile": request.capability_profile}
+    event_data = {
+        "source_name": request.source_name,
+        "capability_profile": request.capability_profile,
+    }
+    emit_event("governance.profile.updated", "aether-api", event_data)
+    return {
+        "status": "updated",
+        "source_name": request.source_name,
+        "capability_profile": request.capability_profile,
+    }
 
 
 @app.get("/governance/audit")
@@ -257,48 +267,51 @@ def model_get(model_name: str) -> dict[str, Any]:
 @app.post("/models/pull")
 def models_pull(request: ModelPullRequest) -> dict[str, Any]:
     result = subprocess.run(
-        [str(PROJECT_ROOT / "bin" / "aether-models"), "--pull", request.model_name],
+        [str(AETHER_ROOT / "bin" / "aether-models"), "--pull", request.model_name],
         text=True,
         capture_output=True,
         timeout=7200,
     )
     output = (result.stdout + "\n" + result.stderr).strip()
     if result.returncode != 0:
-        raise HTTPException(status_code=500, detail=output or "model pull failed")
+        error_detail = output or "model pull failed"
+        raise HTTPException(status_code=500, detail=error_detail)
     return {"status": "ok", "model_name": request.model_name, "output": output}
 
 
 @app.get("/verify")
 def verify() -> dict[str, Any]:
     result = subprocess.run(
-        [str(PROJECT_ROOT / "bin" / "aether-verify"), "--json"],
+        [str(AETHER_ROOT / "bin" / "aether-verify"), "--json"],
         text=True,
         capture_output=True,
         timeout=180,
     )
     output = (result.stdout + "\n" + result.stderr).strip()
     if result.returncode != 0:
-        raise HTTPException(status_code=500, detail=output or "verification failed")
+        error_detail = output or "verification failed"
+        raise HTTPException(status_code=500, detail=error_detail)
     return json.loads(output)
 
 
 @app.post("/reports/export")
 def reports_export() -> dict[str, Any]:
     result = subprocess.run(
-        [str(PROJECT_ROOT / "bin" / "aether-report")],
+        [str(AETHER_ROOT / "bin" / "aether-report")],
         text=True,
         capture_output=True,
         timeout=300,
     )
     output = (result.stdout + "\n" + result.stderr).strip()
     if result.returncode != 0:
-        raise HTTPException(status_code=500, detail=output or "report export failed")
+        error_detail = output or "report export failed"
+        raise HTTPException(status_code=500, detail=error_detail)
     return {"status": "ok", "path": output}
 
 
 @app.get("/release/manifest")
 def release_manifest() -> dict[str, Any]:
-    manifest_path = PROJECT_ROOT / "RELEASE_MANIFEST.json"
+    manifest_path = AETHER_ROOT / "RELEASE_MANIFEST.json"
     if not manifest_path.exists():
         raise HTTPException(status_code=404, detail="release manifest not found")
     return json.loads(manifest_path.read_text(encoding="utf-8"))

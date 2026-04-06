@@ -68,8 +68,10 @@ def resolve_config_paths(raw: dict[str, Any]) -> dict[str, Any]:
     )
     for section, key in path_fields:
         section_data = raw.get(section)
-        if isinstance(section_data, dict) and isinstance(section_data.get(key), str):
-            section_data[key] = resolve_repo_path(section_data[key])
+        if isinstance(section_data, dict):
+            value = section_data.get(key)
+            if isinstance(value, str):
+                section_data[key] = resolve_repo_path(value)
     return raw
 
 
@@ -131,14 +133,12 @@ def seed_governance_profiles() -> None:
 
     db = get_db()
     for source_name, capability_profile in profiles.items():
-        db.execute(
-            """
+        insert_sql = """
             INSERT INTO governance_profiles(source_name, capability_profile, updated_at)
             VALUES (?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(source_name) DO NOTHING
-            """,
-            (source_name, capability_profile),
-        )
+            """
+        db.execute(insert_sql, (source_name, capability_profile))
     db.commit()
     db.close()
 
@@ -160,9 +160,9 @@ def seed_model_registry() -> None:
 
     db = get_db()
     for model_name, meta in registry.items():
-        db.execute(
-            """
-            INSERT INTO model_registry(model_name, role, enabled, installed, auto_pull, size_hint, description, updated_at)
+        insert_sql = """
+            INSERT INTO model_registry(model_name, role, enabled, installed,
+                                       auto_pull, size_hint, description, updated_at)
             VALUES (?, ?, ?, 0, ?, ?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(model_name) DO UPDATE SET
                 role = excluded.role,
@@ -171,7 +171,9 @@ def seed_model_registry() -> None:
                 size_hint = excluded.size_hint,
                 description = excluded.description,
                 updated_at = CURRENT_TIMESTAMP
-            """,
+            """
+        db.execute(
+            insert_sql,
             (
                 model_name,
                 str(meta.get("role", "general")),
@@ -362,13 +364,14 @@ def propose_command(
     needs_confirmation: bool = True,
 ) -> int:
     db = get_db()
-    cursor = db.execute(
-        """
+    insert_sql = """
         INSERT INTO command_proposals(
             source, user_input, proposed_command, reason, needs_confirmation
         )
         VALUES (?, ?, ?, ?, ?)
-        """,
+        """
+    cursor = db.execute(
+        insert_sql,
         (source, user_input, proposed_command, reason, 1 if needs_confirmation else 0),
     )
     db.commit()
@@ -379,13 +382,11 @@ def propose_command(
 
 def record_audit(actor: str, action: str, target: str, status: str, details: str) -> None:
     db = get_db()
-    db.execute(
-        """
+    insert_sql = """
         INSERT INTO audit_log(actor, action, target, status, details)
         VALUES (?, ?, ?, ?, ?)
-        """,
-        (actor, action, target, status, details),
-    )
+        """
+    db.execute(insert_sql, (actor, action, target, status, details))
     db.commit()
     db.close()
 
@@ -628,7 +629,9 @@ def fetch_agent_states() -> list[sqlite3.Row]:
     return rows
 
 
-def record_remediation_action(agent: str, target: str, action: str, status: str, details: str) -> None:
+def record_remediation_action(
+    agent: str, target: str, action: str, status: str, details: str
+) -> None:
     db = get_db()
     db.execute(
         """
@@ -900,8 +903,8 @@ def mark_event_done(event_id: int) -> None:
 def command_allowed(command: str) -> tuple[bool, str]:
     policy = load_policy()
     for pattern in policy.get("blocked_patterns", []):
-      if pattern in command:
-        return False, f"Blocked by policy pattern: {pattern}"
+        if pattern in command:
+            return False, f"Blocked by policy pattern: {pattern}"
 
     for allowed in policy.get("allowed_read_commands", []):
         if command == allowed or command.startswith(f"{allowed} "):
@@ -980,7 +983,8 @@ def timestamp_id(prefix: str) -> str:
 
 def memory_graph_path() -> Path:
     cfg = load_config()
-    graph_file = cfg.memory.get("graph_file", str(AETHER_ROOT / "data" / "graph" / "memory_graph.json"))
+    default_path = str(AETHER_ROOT / "data" / "graph" / "memory_graph.json")
+    graph_file = cfg.memory.get("graph_file", default_path)
     path = Path(graph_file)
     path.parent.mkdir(parents=True, exist_ok=True)
     return path
@@ -1010,7 +1014,9 @@ def upsert_graph_edge(source: str, target: str, relation: str) -> None:
     graph = load_memory_graph()
     edges = graph.setdefault("edges", [])
     if not any(
-        edge.get("source") == source and edge.get("target") == target and edge.get("relation") == relation
+        edge.get("source") == source
+        and edge.get("target") == target
+        and edge.get("relation") == relation
         for edge in edges
     ):
         edges.append({"source": source, "target": target, "relation": relation})

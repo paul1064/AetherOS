@@ -8,16 +8,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-def discover_project_root() -> Path:
-    for candidate in Path(__file__).resolve().parents:
-        if (candidate / "config" / "aether.yaml").exists():
-            return candidate
-    raise RuntimeError("Unable to determine AetherOS project root")
-
-
-PROJECT_ROOT = discover_project_root()
-sys.path.insert(0, str(PROJECT_ROOT / "lib"))
-
 from aether_core import (
     emit_event,
     fetch_meta_jobs,
@@ -28,6 +18,17 @@ from aether_core import (
     update_meta_job,
     write_agent_state,
 )
+
+
+def discover_project_root() -> Path:
+    for candidate in Path(__file__).resolve().parents:
+        if (candidate / "config" / "aether.yaml").exists():
+            return candidate
+    raise RuntimeError("Unable to determine AetherOS project root")
+
+
+PROJECT_ROOT = discover_project_root()
+sys.path.insert(0, str(PROJECT_ROOT / "lib"))
 
 LOG_PATH = PROJECT_ROOT / "runtime" / "logs" / "meta-agent.log"
 
@@ -48,6 +49,7 @@ def max_parallel_jobs() -> int:
 
 def build_subagent_image() -> None:
     image_name = str(load_config().raw["meta_agent"]["default_image"])
+    containerfile = PROJECT_ROOT / "containers" / "subagent-base" / "Containerfile"
     proc = subprocess.run(
         [
             "podman",
@@ -55,7 +57,7 @@ def build_subagent_image() -> None:
             "-t",
             image_name,
             "-f",
-            str(PROJECT_ROOT / "containers" / "subagent-base" / "Containerfile"),
+            str(containerfile),
             str(PROJECT_ROOT),
         ],
         text=True,
@@ -63,7 +65,8 @@ def build_subagent_image() -> None:
         timeout=600,
     )
     if proc.returncode != 0:
-        raise RuntimeError((proc.stdout + "\n" + proc.stderr).strip() or "subagent image build failed")
+        error_msg = (proc.stdout + "\n" + proc.stderr).strip()
+        raise RuntimeError(error_msg or "subagent image build failed")
 
 
 def launch_job(job: dict) -> None:
@@ -82,8 +85,15 @@ def launch_job(job: dict) -> None:
     prompt_file = runs_dir / f"job-{job_id}-prompt.json"
     prompt_file.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
-    image_name = job["image_name"] or str(load_config().raw["meta_agent"]["default_image"])
-    update_meta_job(job_id, "running", container_name=container_name, output_path=str(output_path))
+    image_name = job["image_name"] or str(
+        load_config().raw["meta_agent"]["default_image"]
+    )
+    update_meta_job(
+        job_id,
+        "running",
+        container_name=container_name,
+        output_path=str(output_path),
+    )
 
     proc = subprocess.run(
         [
@@ -104,13 +114,20 @@ def launch_job(job: dict) -> None:
         timeout=120,
     )
     if proc.returncode != 0:
-        update_meta_job(job_id, "failed", notes=(proc.stdout + "\n" + proc.stderr).strip())
-        raise RuntimeError((proc.stdout + "\n" + proc.stderr).strip() or "subagent launch failed")
+        error_msg = (proc.stdout + "\n" + proc.stderr).strip()
+        update_meta_job(
+            job_id, "failed", notes=error_msg
+        )
+        raise RuntimeError(error_msg or "subagent launch failed")
 
     emit_event(
         "meta.job.started",
         "meta-agent",
-        {"job_id": job_id, "container_name": container_name, "output_path": str(output_path)},
+        {
+            "job_id": job_id,
+            "container_name": container_name,
+            "output_path": str(output_path),
+        },
     )
     log(f"job started id={job_id} container={container_name}")
 
@@ -138,7 +155,8 @@ def reconcile_running_jobs() -> None:
             )
             log(f"job completed id={int(job['id'])}")
         else:
-            update_meta_job(int(job["id"]), "failed", notes="container exited without output")
+            notes_msg = "container exited without output"
+            update_meta_job(int(job["id"]), "failed", notes=notes_msg)
             emit_event("meta.job.failed", "meta-agent", {"job_id": int(job["id"])})
             log(f"job failed id={int(job['id'])}")
 
@@ -150,13 +168,15 @@ def main() -> None:
     try:
         build_subagent_image()
     except Exception as exc:
-        record_system_event("meta-agent", "error", f"image_build_failed: {exc}")
+        error_msg = f"image_build_failed: {exc}"
+        record_system_event("meta-agent", "error", error_msg)
         write_agent_state("meta-agent", "running", "degraded")
 
     while True:
         try:
             reconcile_running_jobs()
-            if bool(load_config().raw["meta_agent"]["auto_start_queued_jobs"]):
+            cfg = load_config().raw["meta_agent"]
+            if bool(cfg["auto_start_queued_jobs"]):
                 available_slots = max_parallel_jobs() - running_jobs()
                 if available_slots > 0:
                     for job in fetch_meta_jobs("queued", limit=available_slots):
