@@ -629,7 +629,9 @@ def fetch_agent_states() -> list[sqlite3.Row]:
     return rows
 
 
-def record_remediation_action(agent: str, target: str, action: str, status: str, details: str) -> None:
+def record_remediation_action(
+    agent: str, target: str, action: str, status: str, details: str
+) -> None:
     db = get_db()
     db.execute(
         """
@@ -981,7 +983,8 @@ def timestamp_id(prefix: str) -> str:
 
 def memory_graph_path() -> Path:
     cfg = load_config()
-    graph_file = cfg.memory.get("graph_file", str(AETHER_ROOT / "data" / "graph" / "memory_graph.json"))
+    default_path = str(AETHER_ROOT / "data" / "graph" / "memory_graph.json")
+    graph_file = cfg.memory.get("graph_file", default_path)
     path = Path(graph_file)
     path.parent.mkdir(parents=True, exist_ok=True)
     return path
@@ -1011,7 +1014,9 @@ def upsert_graph_edge(source: str, target: str, relation: str) -> None:
     graph = load_memory_graph()
     edges = graph.setdefault("edges", [])
     if not any(
-        edge.get("source") == source and edge.get("target") == target and edge.get("relation") == relation
+        edge.get("source") == source
+        and edge.get("target") == target
+        and edge.get("relation") == relation
         for edge in edges
     ):
         edges.append({"source": source, "target": target, "relation": relation})
