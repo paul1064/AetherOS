@@ -130,7 +130,8 @@ def proposal_get(proposal_id: int) -> dict[str, Any]:
 def proposal_approve(proposal_id: int, request: NoteRequest) -> dict[str, Any]:
     if not approve_proposal(proposal_id, request.note):
         raise HTTPException(status_code=404, detail="Proposal not found")
-    emit_event("proposal.approved", "aether-api", {"proposal_id": proposal_id, "note": request.note})
+    event_data = {"proposal_id": proposal_id, "note": request.note}
+    emit_event("proposal.approved", "aether-api", event_data)
     return {"status": "approved", "proposal_id": proposal_id}
 
 
@@ -138,7 +139,8 @@ def proposal_approve(proposal_id: int, request: NoteRequest) -> dict[str, Any]:
 def proposal_reject(proposal_id: int, request: NoteRequest) -> dict[str, Any]:
     if not reject_proposal(proposal_id, request.note):
         raise HTTPException(status_code=404, detail="Proposal not found")
-    emit_event("proposal.rejected", "aether-api", {"proposal_id": proposal_id, "note": request.note})
+    event_data = {"proposal_id": proposal_id, "note": request.note}
+    emit_event("proposal.rejected", "aether-api", event_data)
     return {"status": "rejected", "proposal_id": proposal_id}
 
 
@@ -152,7 +154,8 @@ def multimodal_screenshot() -> dict[str, Any]:
     )
     output = (result.stdout + "\n" + result.stderr).strip()
     if result.returncode != 0:
-        raise HTTPException(status_code=500, detail=output or "screenshot failed")
+        error_detail = output or "screenshot failed"
+        raise HTTPException(status_code=500, detail=error_detail)
     return {"status": "ok", "output": output}
 
 
@@ -166,7 +169,8 @@ def multimodal_stt(request: SpeechRequest) -> dict[str, Any]:
     )
     output = (result.stdout + "\n" + result.stderr).strip()
     if result.returncode != 0:
-        raise HTTPException(status_code=500, detail=output or "stt failed")
+        error_detail = output or "stt failed"
+        raise HTTPException(status_code=500, detail=error_detail)
     return {"status": "ok", "output": output}
 
 
@@ -184,7 +188,8 @@ def meta_job_create(request: MetaJobRequest) -> dict[str, Any]:
         image_name=request.image_name,
         notes=request.notes,
     )
-    emit_event("meta.job.queued", "aether-api", {"job_id": job_id, "name": request.name, "role": request.role})
+    event_data = {"job_id": job_id, "name": request.name, "role": request.role}
+    emit_event("meta.job.queued", "aether-api", event_data)
     return {"status": "queued", "job_id": job_id}
 
 
@@ -229,12 +234,16 @@ def governance_profiles() -> list[dict[str, Any]]:
 @app.post("/governance/profiles")
 def governance_profile_update(request: GovernanceProfileRequest) -> dict[str, Any]:
     update_governance_profile(request.source_name, request.capability_profile)
-    emit_event(
-        "governance.profile.updated",
-        "aether-api",
-        {"source_name": request.source_name, "capability_profile": request.capability_profile},
-    )
-    return {"status": "updated", "source_name": request.source_name, "capability_profile": request.capability_profile}
+    event_data = {
+        "source_name": request.source_name,
+        "capability_profile": request.capability_profile,
+    }
+    emit_event("governance.profile.updated", "aether-api", event_data)
+    return {
+        "status": "updated",
+        "source_name": request.source_name,
+        "capability_profile": request.capability_profile,
+    }
 
 
 @app.get("/governance/audit")
@@ -265,7 +274,8 @@ def models_pull(request: ModelPullRequest) -> dict[str, Any]:
     )
     output = (result.stdout + "\n" + result.stderr).strip()
     if result.returncode != 0:
-        raise HTTPException(status_code=500, detail=output or "model pull failed")
+        error_detail = output or "model pull failed"
+        raise HTTPException(status_code=500, detail=error_detail)
     return {"status": "ok", "model_name": request.model_name, "output": output}
 
 
@@ -279,7 +289,8 @@ def verify() -> dict[str, Any]:
     )
     output = (result.stdout + "\n" + result.stderr).strip()
     if result.returncode != 0:
-        raise HTTPException(status_code=500, detail=output or "verification failed")
+        error_detail = output or "verification failed"
+        raise HTTPException(status_code=500, detail=error_detail)
     return json.loads(output)
 
 
@@ -293,7 +304,8 @@ def reports_export() -> dict[str, Any]:
     )
     output = (result.stdout + "\n" + result.stderr).strip()
     if result.returncode != 0:
-        raise HTTPException(status_code=500, detail=output or "report export failed")
+        error_detail = output or "report export failed"
+        raise HTTPException(status_code=500, detail=error_detail)
     return {"status": "ok", "path": output}
 
 

@@ -68,8 +68,10 @@ def resolve_config_paths(raw: dict[str, Any]) -> dict[str, Any]:
     )
     for section, key in path_fields:
         section_data = raw.get(section)
-        if isinstance(section_data, dict) and isinstance(section_data.get(key), str):
-            section_data[key] = resolve_repo_path(section_data[key])
+        if isinstance(section_data, dict):
+            value = section_data.get(key)
+            if isinstance(value, str):
+                section_data[key] = resolve_repo_path(value)
     return raw
 
 
@@ -131,14 +133,12 @@ def seed_governance_profiles() -> None:
 
     db = get_db()
     for source_name, capability_profile in profiles.items():
-        db.execute(
-            """
+        insert_sql = """
             INSERT INTO governance_profiles(source_name, capability_profile, updated_at)
             VALUES (?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(source_name) DO NOTHING
-            """,
-            (source_name, capability_profile),
-        )
+            """
+        db.execute(insert_sql, (source_name, capability_profile))
     db.commit()
     db.close()
 
@@ -160,9 +160,9 @@ def seed_model_registry() -> None:
 
     db = get_db()
     for model_name, meta in registry.items():
-        db.execute(
-            """
-            INSERT INTO model_registry(model_name, role, enabled, installed, auto_pull, size_hint, description, updated_at)
+        insert_sql = """
+            INSERT INTO model_registry(model_name, role, enabled, installed,
+                                       auto_pull, size_hint, description, updated_at)
             VALUES (?, ?, ?, 0, ?, ?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(model_name) DO UPDATE SET
                 role = excluded.role,
@@ -171,7 +171,9 @@ def seed_model_registry() -> None:
                 size_hint = excluded.size_hint,
                 description = excluded.description,
                 updated_at = CURRENT_TIMESTAMP
-            """,
+            """
+        db.execute(
+            insert_sql,
             (
                 model_name,
                 str(meta.get("role", "general")),
@@ -362,13 +364,14 @@ def propose_command(
     needs_confirmation: bool = True,
 ) -> int:
     db = get_db()
-    cursor = db.execute(
-        """
+    insert_sql = """
         INSERT INTO command_proposals(
             source, user_input, proposed_command, reason, needs_confirmation
         )
         VALUES (?, ?, ?, ?, ?)
-        """,
+        """
+    cursor = db.execute(
+        insert_sql,
         (source, user_input, proposed_command, reason, 1 if needs_confirmation else 0),
     )
     db.commit()
@@ -379,13 +382,11 @@ def propose_command(
 
 def record_audit(actor: str, action: str, target: str, status: str, details: str) -> None:
     db = get_db()
-    db.execute(
-        """
+    insert_sql = """
         INSERT INTO audit_log(actor, action, target, status, details)
         VALUES (?, ?, ?, ?, ?)
-        """,
-        (actor, action, target, status, details),
-    )
+        """
+    db.execute(insert_sql, (actor, action, target, status, details))
     db.commit()
     db.close()
 

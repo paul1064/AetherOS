@@ -43,7 +43,8 @@ def ingest_recent_events(db: sqlite3.Connection) -> int:
         """
         SELECT id, payload_json, source, event_type
         FROM event_bus
-        WHERE event_type IN ('user.prompt.received', 'orchestrator.plan.created')
+        WHERE event_type IN ('user.prompt.received',
+                             'orchestrator.plan.created')
         ORDER BY id DESC
         LIMIT 20
         """

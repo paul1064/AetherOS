@@ -22,6 +22,7 @@ def api_get(path: str) -> dict[str, Any] | list[dict[str, Any]]:
 
 
 def api_post(path: str, payload: dict[str, Any]) -> dict[str, Any]:
-    response = requests.post(f"{api_base_url()}{path}", json=payload, timeout=60)
+    url = f"{api_base_url()}{path}"
+    response = requests.post(url, json=payload, timeout=60)
     response.raise_for_status()
     return response.json()
